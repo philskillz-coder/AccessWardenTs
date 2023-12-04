@@ -1,0 +1,80 @@
+{
+  "scripts": {
+    "dev": "concurrently --n \"VITE,EXPRESS\" --c \"#ac49fe.bold,#3c873a.bold\" \"vite\" \"nodemon\"",
+    "build": "node scripts/build.js",
+    "lint": "eslint \"**/*.ts\" \"**/*.tsx\"",
+    "lint:fix": "eslint \"**/*.ts\" \"**/*.tsx\" --fix",
+    "serve": "ts-node -r tsconfig-paths/register src/backend/index.ts",
+    "typeorm": "npx typeorm-ts-node-commonjs --dataSource src/data-source.ts",
+    "typeorm:migrate": "npx typeorm-ts-node-commonjs migration:run -d src\\backend\\database\\data-source.ts",
+    "typeorm:create": "npx typeorm-ts-node-commonjs migration:create src\\backend\\database\\migration\\migration --timestamp",
+    "typeorm:generate": "npx typeorm-ts-node-commonjs migration:generate -d src\\backend\\database\\data-source.ts src\\backend\\database\\migration\\migration --timestamp",
+    "typeorm:revert": "npx typeorm-ts-node-commonjs migration:revert -d src\\backend\\database\\data-source.ts"
+  },
+  "eslintIgnore": [
+    "dist",
+    "node_modules"
+  ],
+  "nodemonConfig": {
+    "watch": [
+      "src/backend"
+    ],
+    "ext": "ts",
+    "exec": "pnpm serve --dev"
+  },
+  "devDependencies": {
+    "@types/body-parser": "^1.19.5",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/express-session": "^1.17.10",
+    "@types/node": "^20.10.2",
+    "@types/passport": "^1.0.16",
+    "@types/passport-discord": "^0.1.11",
+    "@types/ws": "^8.5.10",
+    "@typescript-eslint/parser": "^6.13.1",
+    "concurrently": "^8.2.2",
+    "eslint": "^8.55.0",
+    "eslint-plugin-simple-import-sort": "^10.0.0",
+    "eslint-plugin-solid": "^0.13.0",
+    "eslint-plugin-unused-imports": "^3.0.0",
+    "nodemon": "^3.0.2",
+    "sass": "^1.69.5",
+    "ts-node": "^10.9.1",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.3.2",
+    "vite": "^4.5.0",
+    "vite-plugin-solid": "^2.7.2"
+  },
+  "dependencies": {
+    "@hope-ui/solid": "^0.6.7",
+    "@solidjs/router": "^0.9.1",
+    "@stitches/core": "^1.2.8",
+    "@supabase/supabase-js": "^2.39.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "events": "^3.3.0",
+    "express": "^4.18.2",
+    "express-session": "^1.17.3",
+    "hashids": "^2.3.0",
+    "mongoose": "^7.6.6",
+    "morgan": "^1.10.0",
+    "passport": "^0.6.0",
+    "passport-discord": "^0.1.4",
+    "passport-local": "^1.0.0",
+    "pg": "^8.11.3",
+    "postgresql-client": "^2.10.1",
+    "redis": "^4.6.11",
+    "reflect-metadata": "^0.1.13",
+    "solid-icons": "^1.1.0",
+    "solid-js": "^1.8.7",
+    "solid-supabase": "^0.5.0",
+    "solid-toast": "^0.5.0",
+    "solid-transition-group": "^0.2.3",
+    "speakeasy": "^2.0.0",
+    "tedis": "^0.1.12",
+    "typeorm": "^0.3.17",
+    "uuid": "^9.0.1",
+    "winston": "^3.11.0",
+    "ws": "^8.14.2"
+  }
+}

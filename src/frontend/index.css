@@ -1,0 +1,46 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap");
+
+.hope-ui-light {
+    --gray: rgb(142, 142, 147);
+    --gray2: rgb(174, 174, 178);
+    --gray3: rgb(199, 199, 204);
+    --gray4: rgb(209, 209, 214);
+    --gray5: rgb(229, 229, 234);
+    --gray6: rgb(242, 242, 247);
+    
+    --text: #000;
+    --navbar: var(--gray5);
+    --background: var(--gray6);
+}
+
+.hope-ui-dark {
+    --gray: rgb(142, 142, 147);
+    --gray2: rgb(99, 99, 102);
+    --gray3: rgb(72, 72, 74);
+    --gray4: rgb(58, 58, 60);
+    --gray5: rgb(44, 44, 46);
+    --gray6: rgb(28, 28, 30);
+    
+    --text: #fff;
+    --navbar: var(--gray5);
+    --background: var(--gray6);
+}
+
+* {
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+body {
+    color: var(--text) !important;
+    font-weight: 400;
+    font-family: "Inter", sans-serif;
+    overflow: hidden;
+    scroll-behavior: smooth;
+    background-color: var(--navbar) !important;
+}
+
+section[id^="hope-modal"] {
+    background-color: var(--gray6);
+}

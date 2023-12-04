@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "target": "ES6",
+    "module": "CommonJS",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "jsx": "preserve",
+    "jsxImportSource": "solid-js",
+    "types": ["node"],
+    "noEmit": true,
+    "baseUrl": "./src",
+    "paths": {
+      "@api/*": ["backend/api/*"],
+      "@models/*": ["backend/database/models/*"],
+      "@components/*": ["frontend/components/*"],
+      "@pages/*": ["frontend/pages/*"],
+      "@typings": ["typings"],
+      "@shared/*": ["shared/*"],
+    }
+  }
+}

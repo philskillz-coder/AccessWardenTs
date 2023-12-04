@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0095ff" />
+    <meta property="og:type" content="website"/>
+    <meta property="og:title" content="Lusors Buzzer Game - Kein Zugriff"/>
+    <meta property="og:description" content=""/>
+    <meta property="og:site_name " content="Muchacho Army"/>
+    <title>Lusors Buzzer Game - Kein Zugriff</title>
+    <link rel="shortcut icon" type="image/ico" href="MA.png" />
+
+    <style>
+        @import url("https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap");
+        
+        :root {
+            --text: #000000;
+            --background: rgb(229, 229, 234);
+            --modal: rgb(242, 242, 247);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --text: #ffffff;
+                --background: rgb(28, 28, 30);
+                --modal: rgb(44, 44, 46);
+            }
+        }
+
+        * {
+            padding: 0;
+            margin: 0;
+            box-sizing: border-box;
+        }
+
+
+        body {
+            color: var(--text);
+            font-size: 1vh;
+            font-weight: 400;
+            font-family: "Inter", sans-serif;
+            overflow: hidden;
+            scroll-behavior: smooth;
+            background-color: var(--background);
+        }
+    
+        .modal {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: var(--modal);
+            border-radius: 10px;
+            width: 400px;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .label {
+            width: 120px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+
+        p {
+            font-size: 1.5rem;
+            font-weight: 500;
+            margin-top: 10px;
+        }
+
+        .button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #0095ff3f;
+            font-size: 1rem;
+            color: #0095ff;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+  </head>
+  <body>
+    <div class="modal">
+        <img src="https://muchacho-army.de/logo.png" class="label">
+            <h1>Access denied</h1>
+            <p>You don't have permission to access this page.</p>
+            <div class="button" onclick="location.href = '/api/auth'">Try again</div>
+    </div>
+  </body>
