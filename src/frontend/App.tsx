@@ -1,22 +1,24 @@
 import "./app.scss";
 import "./index.css";
 
-import { Button, FormControl, FormLabel, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, useColorMode } from "@hope-ui/solid";
+import Navbar from "@components/Navbar";
+import { Button, FormControl, FormLabel, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay } from "@hope-ui/solid";
+import Account from "@pages/Account";
 import Dashboard from "@pages/Dashboard";
 import Landing from "@pages/Landing";
 import Login from "@pages/Login";
 import Register from "@pages/Register";
-import { Route, Routes } from "@solidjs/router";
-import { Component, createEffect, createSignal, onMount } from "solid-js";
+import { Route, Routes, useNavigate } from "@solidjs/router";
+import { Component, createSignal, onMount } from "solid-js";
 
 import Store from "./Store";
 import { api } from "./utils";
 
-
 const App: Component = () => {
     const [user, setUser] = createSignal(null);
-    // eslint-disable-next-line no-unused-vars
     const [store, setStore] = createSignal(null);
+
+    // eslint-disable-next-line no-unused-vars
     const [isOpen, setOpen] = createSignal(false);
     const [mfa, setMfa] = createSignal(null);
 
@@ -36,24 +38,26 @@ const App: Component = () => {
         setOpen(false);
     };
 
+    const navigate = useNavigate();
+
     onMount(async () => {
-        await api.post("/api/auth/@me", {}, async res => {
-            setUser(res.data.user);
-        });
+        const res = await api.post("/api/auth/@me");
+        // if (res.hasError()) {
+        //     navigate("/login");
+        //     return;
+        // }
+
+        setUser(res.data.user);
 
         const handleChangeColorScheme = () => {
+            // load "hope-ui-color-mode" from localStorage
             const colorMode = localStorage.getItem("hope-ui-color-mode");
             document.body.className = `theme-${colorMode} hope-ui-${colorMode}`;
         };
         handleChangeColorScheme();
     });
 
-    // eslint-disable-next-line no-unused-vars
-    const { colorMode, toggleColorMode } = useColorMode();
-
-    createEffect(() => {
-        if (user()) setStore(new Store(user()?.accessToken));
-    });
+    setStore(new Store(user, setUser));
 
     function onMfaClose() {
         setOpen(false);
@@ -66,12 +70,14 @@ const App: Component = () => {
 
     return (
         <>
+            <Navbar store={store}/>
             <div class="background">
                 <Routes>
-                    <Route path="/" element={<Landing user={user}/>}/>
-                    <Route path="/dashboard" element={<Dashboard />}/>
-                    <Route path="/login" element={<Login />}/>
-                    <Route path="/register" element={<Register />}/>
+                    <Route path="/" element={<Landing store={store}/>}/>
+                    <Route path="/account" element={<Account store={store}/>} />
+                    <Route path="/dashboard" element={<Dashboard store={store} />}/>
+                    <Route path="/login" element={<Login store={store} />}/>
+                    <Route path="/register" element={<Register store={store} />}/>
                 </Routes>
                 <Modal
                     opened={isOpen()}

@@ -27,6 +27,10 @@ class TemporaryValueService {
         return value;
     }
 
+    removeValue(key: string): void {
+        this.data.delete(key);
+    }
+
     contains(key: string): boolean {
         return this.data.has(key);
     }

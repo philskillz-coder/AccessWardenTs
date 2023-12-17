@@ -1,41 +1,23 @@
-import { NotificationStatusTypes } from "./WebSocket";
-
-export type ApiResponseStatus = "success" | "error" | "mfarequired" | "mfainvalid";
+/* eslint-disable no-unused-vars */
+export type ApiResponseStatus = "success" | "error";
+export enum ApiResponseFlags {
+    mfa_required = "mfareq",
+    mfa_invalid = "mfainv",
+    unauthorized = "unauthorized",
+    unauthorized_mfa_req = "unauthorized_mfa_req"
+}
 
 export class ApiResponse {
     status: ApiResponseStatus;
-    error?: string;
     data: any;
-    message?: string;
-    showNotification?: boolean;
+    message: string;
+    flags: ApiResponseFlags[];
 
-    constructor(status: ApiResponseStatus, error?: string, data?: any, message?: string, showNotification?: boolean) {
-        this.status = status;
-        this.error = error;
-        this.data = data;
-        this.message = message;
-        this.showNotification = showNotification;
-    }
-
-    static success(data?: any) {
-        return new ApiResponse("success", undefined, data);
-    }
-
-    static error(error: string, data?: any) {
-        return new ApiResponse("error", error, data);
-    }
-
-    static fromError(error: Error, data?: any) {
-        return new ApiResponse("error", error.message, data);
-    }
-
-    notificationStatus() : NotificationStatusTypes {
-        switch (this.status) {
-            case "success":
-                return "success";
-            case "error":
-                return "danger";
-        }
+    constructor(response: any) {
+        this.status = response.status;
+        this.data = response.data || {};
+        this.message = response.message || "";
+        this.flags = response.flags || [];
     }
 
     hasError() {
@@ -46,15 +28,7 @@ export class ApiResponse {
         return this.data !== undefined && this.data !== null;
     }
 
-    hasMessage() {
-        return this.message !== undefined && this.message !== null;
-    }
-
-    mfaRequired() {
-        return this.status === "mfarequired";
-    }
-
-    mfaInvalid() {
-        return this.status === "mfainvalid";
+    hasFlag(flag: ApiResponseFlags) {
+        return this.flags.includes(flag);
     }
 }

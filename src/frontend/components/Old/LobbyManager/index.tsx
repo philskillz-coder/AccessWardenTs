@@ -19,7 +19,7 @@ const LobbyManager = props => {
                 <Show
                     when={store()?.Game.gameID()}
                     fallback={
-                        <div class="modal">
+                        <div class="ui-modal">
                             <h1>Spiel beitreten oder erstellen?</h1>
                             <div class="actions">
                                 <div class="action">

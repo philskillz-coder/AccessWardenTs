@@ -19,6 +19,9 @@ export class User {
     @Column({ default: false })
         isEmailVerified: boolean = false;
 
+    @Column({ default: "default0.png"})
+        avatar: string;
+
     @Column()
         passwordHash: string;
 

@@ -1,33 +1,37 @@
-import { useColorMode } from "@hope-ui/solid";
 import { A } from "@solidjs/router";
-import { User } from "backend/database/entity/User";
+import { Show } from "solid-js";
+
+import Store from "../Store";
 
 function Landing(props) {
-    const user: () => User = props.user;
-
-    // eslint-disable-next-line no-unused-vars
-    const { colorMode, toggleColorMode } = useColorMode();
-
+    const store: () => Store = props.store;
 
     return (
         <>
-            <div class="modal center ">
-                <h1>Go to Dashboard</h1>
-                <span>{user()?.username}</span>
-                <div class="actions">
-                    <div class="action bg-info">
-                        <A href="/dashboard">Dashboard</A>
+            <div class="ui-modal center">
+                <Show when={store().user()}>
+                    <h1>Welcome back, {store().user().username}</h1>
+                    <div class="actions">
+                        <div class="action bg-info">
+                            <A href="/account">Account</A>
+                        </div>
+                        <div class="action bg-info">
+                            <A href="/dashboard">Dashboard</A>
+                        </div>
                     </div>
-                    <div class="action border-center bg-info no-dyn-txt">
-                        <A href="/login">Login</A>
-                        <A href="/register">Register</A>
+                </Show>
+
+                <Show when={!store().user()}>
+                    <h1>Welcome to AccessWarden</h1>
+                    <div class="actions">
+                        <div class="action">
+                            <A href="/login">Login</A>
+                        </div>
+                        <div class="action">
+                            <A href="/register">Register</A>
+                        </div>
                     </div>
-                    <div class="action border">
-                        <button onClick={toggleColorMode}>
-                            Toggle Visual Mode
-                        </button>
-                    </div>
-                </div>
+                </Show>
             </div>
         </>
     );

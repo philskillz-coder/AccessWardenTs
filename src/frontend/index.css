@@ -22,8 +22,32 @@
     --gray6: rgb(28, 28, 30);
     
     --text: #fff;
-    --navbar: var(--gray5);
     --background: var(--gray6);
+}
+
+.ui-bg {
+    background-color: var(--background);
+}
+.ui-bg-gray {
+    background-color: var(--gray);
+}
+.ui-bg-gray2 {
+    background-color: var(--gray2);
+}
+.ui-bg-gray3 {
+    background-color: var(--gray3);
+}
+.ui-bg-gray4 {
+    background-color: var(--gray4);
+}
+.ui-bg-gray5 {
+    background-color: var(--gray5);
+}
+.ui-bg-gray6 {
+    background-color: var(--gray6);
+}
+.ui-text {
+    color: var(--text);
 }
 
 * {

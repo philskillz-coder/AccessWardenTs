@@ -18,7 +18,7 @@ const FinishedRoundCom = props => {
 
     return (
         <>
-            <div class="modal">
+            <div class="ui-modal">
                 <h1>Round has finished.</h1>
             </div>
         </>

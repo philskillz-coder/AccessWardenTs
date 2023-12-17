@@ -24,7 +24,7 @@ const BuzzerRoundCom = props => {
 
     return (
         <>
-            <div class="modal">
+            <div class="ui-modal">
                 <h1>{store().Game.round().question}</h1>
                 {/* buzzerPressedBy weil wenn nur buzzerPressed code zu früh aktualisiert -> error */}
                 <div class="actions">

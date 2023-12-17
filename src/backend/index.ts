@@ -1,13 +1,12 @@
-import { verifyHash } from "@shared/Hashing";
 import logger from "@shared/Logger";
 import bodyParser from "body-parser";
+import cookieParser from "cookie-parser";
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
 import session from "express-session";
 import morgan from "morgan";
 import passport from "passport";
-import LocalStrategy from "passport-local";
 import path from "path";
 import { createClient } from "redis";
 import { promisify } from "util";
@@ -25,6 +24,7 @@ dotenv.config();
 const app = express();
 app.use(bodyParser.json());
 app.use(cors());
+app.use(cookieParser());
 app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
@@ -34,24 +34,24 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-passport.use(new LocalStrategy((username, password, done) => {
-    // check if username is an email address with regex
-    const isMail = username.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
-    const condition = isMail ? { email: username } : { username: username };
+// passport.use(new LocalStrategy((username, password, done) => {
+//     // check if username is an email address with regex
+//     const isMail = username.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
+//     const condition = isMail ? { email: username } : { username: username };
 
-    AppDataSource.getRepository(User).findOne({ where: condition })
-        .then(user => {
-            if (!user) {
-                return done(null, false, { message: "Incorrect username." });
-            }
+//     AppDataSource.getRepository(User).findOne({ where: condition })
+//         .then(user => {
+//             if (!user) {
+//                 return done(null, false, { message: "Incorrect username." });
+//             }
 
-            if (!verifyHash(password, user.passwordSalt, process.env.HASH_PEPPER, user.passwordHash)) {
-                return done(null, false, { message: "Incorrect password." });
-            }
-            return done(null, user);
-        })
-        .catch(error => done(error));
-}));
+//             if (!verifyHash(password, user.passwordSalt, process.env.HASH_PEPPER, user.passwordHash)) {
+//                 return done(null, false, { message: "Incorrect password." });
+//             }
+//             return done(null, user);
+//         })
+//         .catch(error => done(error));
+// }));
 
 passport.serializeUser((user: any, done) => {
     done(null, `${user.id}-${user.loginSession}`);

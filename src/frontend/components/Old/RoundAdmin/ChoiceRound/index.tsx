@@ -30,7 +30,7 @@ const ChoiceRoundCom = props => {
     const choiceGridClass = (store().Game.round() as CleanChoiceRound).choices.length % 2 === 0 ? "cols-2" : "cols-3";
     return (
         <>
-            <div class="modal">
+            <div class="ui-modal">
                 <h1>{store().Game.round().question}</h1>
                 <div classList={{
                     "choice-grid": true,

@@ -6,6 +6,7 @@ import { Migration1701606037689 } from "./migration/1701606037689-migration";
 import { Migration1701606198365 } from "./migration/1701606198365-migration";
 import { Migration1701607125251 } from "./migration/1701607125251-migration";
 import { Migration1701625034404 } from "./migration/1701625034404-migration";
+import { Migration1702391173497 } from "./migration/1702391173497-migration";
 
 dotenv.config();
 
@@ -22,5 +23,5 @@ export const AppDataSource = new DataSource({
     entities: [e.User, e.Role, e.Permission, e.UserRole, e.RolePermission],
 
     subscribers: [],
-    migrations: [Migration1701606037689, Migration1701606198365, Migration1701607125251, Migration1701625034404],
+    migrations: [Migration1701606037689, Migration1701606198365, Migration1701607125251, Migration1701625034404, Migration1702391173497],
 });

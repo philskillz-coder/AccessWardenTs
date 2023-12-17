@@ -1,6 +1,6 @@
 const Modal = props => {
     return (
-        <div class="modal">
+        <div class="ui-modal">
             <div class="actions">
                 {props.children}
             </div>

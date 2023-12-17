@@ -1,15 +1,18 @@
-import MfaManager from "@components/MfaManager";
-import { createSignal } from "solid-js";
+import { useNavigate } from "@solidjs/router";
+import Store from "frontend/Store";
 
 import { api } from "../utils";
 
-const Dashboard = () => {
-    const [user, setUser] = createSignal(null);
+const Dashboard = props => {
+    const store: () => Store = props.store;
 
-    const logout = async () => {
-        // await apiPost("/api/auth/logout");
-        setUser(null);
-    };
+    const navigate = useNavigate();
+    async function logout() {
+        await api.post("/api/auth/logout", {}, async () => {
+            store().setUser(null);
+            navigate("/");
+        });
+    }
 
     const testMfa = async () => {
         await api.post("/api/test-mfa", {}, async res => {
@@ -19,8 +22,8 @@ const Dashboard = () => {
 
     return (
         <>
-            <div class="modal center">
-                <h1>Welcome back {user() && user().email}</h1>
+            <div class="ui-modal center">
+                <h1>Welcome back {store().user()?.email}</h1>
                 <div class="actions">
                     <div class="action">
                         <button type="button" class="bg-danger" onClick={logout}>Log out</button>
@@ -32,7 +35,6 @@ const Dashboard = () => {
             </div>
             <div>
                 <h2>Your Account</h2>
-                <MfaManager user={user} />
             </div>
         </>
     );

@@ -21,7 +21,7 @@ const MfaManager = props => {
     });
 
     return (
-        <div class="modal">
+        <div class="ui-modal">
             <h1>Manage 2FA</h1>
             <div class="actions">
                 <Show when={mfaEnabled()}>
