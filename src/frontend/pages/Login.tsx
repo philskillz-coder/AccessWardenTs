@@ -1,7 +1,8 @@
 import { notificationService } from "@hope-ui/solid";
 import { A, useNavigate } from "@solidjs/router";
 import Store from "frontend/Store";
-import { createSignal } from "solid-js";
+import { BsEye, BsEyeSlash } from "solid-icons/bs";
+import {createSignal, Show} from "solid-js";
 
 import { api } from "../utils";
 
@@ -10,6 +11,7 @@ const Login = props => {
 
     const [username, setUsername] = createSignal(""); // email of the user
     const [password, setPassword] = createSignal(""); // password of the user
+    const [showPassword, setShowPassword] = createSignal(false);
     const navigate = useNavigate();
 
     async function loginUser() {
@@ -44,9 +46,19 @@ const Login = props => {
                         <input type="text" id="login-username" placeholder="Username or Email Address" autocomplete="username" onChange={e => setUsername(e.target.value)} />
                     </div>
                     <div class="action border">
-                        <input type="password" id="login-password" placeholder="Password" autocomplete="current-password" onChange={e => setPassword(e.target.value)} />
+                        <input type={showPassword() ? "text" : "password"} id="login-password" placeholder="Password" autocomplete="current-password" onChange={e => setPassword(e.target.value)} />
+                        <button type="button" class="ui-icon w-20" style={{ border: "1px solid var(--gray2)", "border-left": "none"}} onClick={() => setShowPassword(!showPassword())}>
+                            <div>
+                                <Show when={!showPassword()}>
+                                    <BsEye size={15} color="#ffffff" />
+                                </Show>
+                                <Show when={showPassword()}>
+                                    <BsEyeSlash size={15} color="#ffffff" />
+                                </Show>
+                            </div>
+                        </button>
                     </div>
-                    <div class="action border bg-success no-dyn-txt">
+                    <div class="action bg-success no-dyn-txt">
                         <button type="button" onClick={loginUser}>Login</button>
                     </div>
                 </form>

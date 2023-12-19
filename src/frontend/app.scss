@@ -193,6 +193,18 @@ $CREATE_BUTTON_COLOR: #678EFE;
     height: 120px;
 }
 
+.w-10 { width: 10% !important; }
+.w-20 { width: 20% !important; }
+.w-30 { width: 30% !important; }
+.w-40 { width: 40% !important; }
+.w-50 { width: 50% !important; }
+.w-60 { width: 60% !important; }
+.w-70 { width: 70% !important; }
+.w-80 { width: 80% !important; }
+.w-90 { width: 90% !important; }
+.w-100 { width: 100% !important; }
+
+
 .text-center {
     text-align: center;
 }
@@ -209,6 +221,7 @@ $CREATE_BUTTON_COLOR: #678EFE;
 .bg-warning {
     background-color: #FBBF24 !important;
 }
+
 .c-danger {
     color: #F87171 !important;
 }
@@ -244,11 +257,11 @@ label {
         transform: translate(-50%, -50%);
     }
 
-    
+
     @media screen and (max-width: 400px) {
         max-width: 400px;
     }
-    
+
     @media screen and (max-width: 800px) {
         min-width: 400px;
         max-width: 800px;
@@ -278,7 +291,7 @@ label {
             display: flex;
             width: 100%;
             border-radius: 5px;
-            
+
             &.border-center {
                 button, input, a {
                     &:not(:last-child) {
@@ -375,7 +388,7 @@ label {
                 color: var(--gray2);
                 background: none;
                 transition: border .3s ease, color .3s ease;
-                
+
                 &::placeholder {
                     line-height: 25px; // Increase the line-height for larger placeholder
                     font-size: 14px; // Increase the font-size for larger placeholder
@@ -438,4 +451,9 @@ label {
             }
         }
     }
+}
+
+.ui-icon {
+    padding: 0;
+    background: none;
 }

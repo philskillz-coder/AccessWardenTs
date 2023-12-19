@@ -1,18 +1,20 @@
-import { Entity, JoinTable, ManyToMany, PrimaryGeneratedColumn } from "typeorm";
+// rolePermission.ts
+import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 
-import {Permission} from "./Permission";
-import {Role} from "./Role";
+import { Permission } from "./Permission";
+import { Role } from "./Role";
 
 @Entity()
 export class RolePermission {
     @PrimaryGeneratedColumn()
         id: number;
 
-    @ManyToMany(() => Role)
-    @JoinTable()
+    @ManyToOne(() => Role, role => role.rolePermissions)
         role: Role;
 
-    @ManyToMany(() => Permission)
-    @JoinTable()
+    @ManyToOne(() => Permission, permission => permission.rolePermissions)
         permission: Permission;
+
+    @Column()
+        hasPermission: boolean;
 }

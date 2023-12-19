@@ -1,13 +1,15 @@
-import { Column, Entity, ManyToMany, PrimaryGeneratedColumn } from "typeorm";
+import {Column, Entity, ManyToMany, OneToMany, PrimaryGeneratedColumn} from "typeorm";
 
-import {User} from "./User";
+import { RolePermission } from "./RolePermission";
+import { User } from "./User";
+
 
 @Entity()
 export class Role {
     @PrimaryGeneratedColumn()
         id: number;
 
-    @Column({ unique: true})
+    @Column({ unique: true })
         name: string;
 
     @Column({ nullable: true })
@@ -18,6 +20,12 @@ export class Role {
 
     @Column()
         isDefault: boolean;
+
+    @Column({ default: 1 })
+        power: number;
+
+    @OneToMany(() => RolePermission, rolePermission => rolePermission.role)
+        rolePermissions: RolePermission[];
 
     @ManyToMany(() => User, user => user.roles)
         users: User[];

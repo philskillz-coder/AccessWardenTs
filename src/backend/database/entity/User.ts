@@ -1,6 +1,6 @@
-import { Column, CreateDateColumn, Entity, JoinTable, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, JoinTable, ManyToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 
-import {UserRole} from "./UserRole";
+import { Role } from "./Role";
 
 @Entity()
 export class User {
@@ -43,7 +43,7 @@ export class User {
     @UpdateDateColumn()
         updatedAt: Date; // Last updated date
 
-    @OneToMany(() => UserRole, userRole => userRole.user)
+    @ManyToMany(() => Role)
     @JoinTable()
-        roles: UserRole[];
+        roles: Role[];
 }

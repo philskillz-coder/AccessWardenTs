@@ -7,7 +7,7 @@
     --gray4: rgb(209, 209, 214);
     --gray5: rgb(229, 229, 234);
     --gray6: rgb(242, 242, 247);
-    
+
     --text: #000;
     --navbar: var(--gray5);
     --background: var(--gray6);
@@ -20,35 +20,19 @@
     --gray4: rgb(58, 58, 60);
     --gray5: rgb(44, 44, 46);
     --gray6: rgb(28, 28, 30);
-    
+
     --text: #fff;
     --background: var(--gray6);
 }
 
-.ui-bg {
-    background-color: var(--background);
-}
-.ui-bg-gray {
-    background-color: var(--gray);
-}
-.ui-bg-gray2 {
-    background-color: var(--gray2);
-}
-.ui-bg-gray3 {
-    background-color: var(--gray3);
-}
-.ui-bg-gray4 {
-    background-color: var(--gray4);
-}
-.ui-bg-gray5 {
-    background-color: var(--gray5);
-}
-.ui-bg-gray6 {
-    background-color: var(--gray6);
-}
-.ui-text {
-    color: var(--text);
-}
+.ui-bg { background-color: var(--background) !important;  }
+.ui-bg-gray { background-color: var(--gray) !important;  }
+.ui-bg-gray2 { background-color: var(--gray2) !important;  }
+.ui-bg-gray3 { background-color: var(--gray3) !important;  }
+.ui-bg-gray4 { background-color: var(--gray4) !important; }
+.ui-bg-gray5 { background-color: var(--gray5) !important; }
+.ui-bg-gray6 { background-color: var(--gray6) !important; }
+.ui-text { color: var(--text) !important; }
 
 * {
     padding: 0;
