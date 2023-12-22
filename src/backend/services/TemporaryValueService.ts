@@ -8,7 +8,6 @@ class TemporaryValueService {
 
     retrieveValue(key: string, keep: boolean = false): any | undefined {
         const entry = this.data.get(key);
-        console.log(entry);
         if (!entry) {
             return undefined;
         }

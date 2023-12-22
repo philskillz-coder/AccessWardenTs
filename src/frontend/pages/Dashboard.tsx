@@ -1,4 +1,4 @@
-import { useNavigate } from "@solidjs/router";
+import { A, useNavigate } from "@solidjs/router";
 import Store from "frontend/Store";
 
 import { api } from "../utils";
@@ -14,22 +14,16 @@ const Dashboard = props => {
         });
     }
 
-    const testMfa = async () => {
-        await api.post("/api/test-mfa", {}, async res => {
-            console.log(res);
-        });
-    };
-
     return (
         <>
             <div class="ui-modal center">
                 <h1>Welcome back {store().user()?.email}</h1>
                 <div class="actions">
-                    <div class="action">
-                        <button type="button" class="bg-danger" onClick={logout}>Log out</button>
+                    <div class="action border">
+                        <A href="/v-users" class="bg-danger">View Users</A>
                     </div>
-                    <div class="action">
-                        <button type="button" class="bg-danger" onClick={testMfa}>Test Mfa</button>
+                    <div class="action border">
+                        <button type="button" class="bg-danger" onClick={logout}>Log out</button>
                     </div>
                 </div>
             </div>

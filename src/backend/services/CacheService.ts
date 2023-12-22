@@ -73,20 +73,6 @@ export class CacheService {
     }
 }
 
-// Example usage:
-
-// const cache = new CacheService({ useRedis: true });
-// await cache.set('key1', 'value1');
-// const result = await cache.get('key1');
-// console.log(result);
-
-// const inMemoryCache = new CacheService({ useRedis: false, maxInMemoryCount: 2 });
-// await inMemoryCache.set('key1', 'value1');
-// await inMemoryCache.set('key2', 'value2');
-// await inMemoryCache.set('key3', 'value3'); // This will evict 'key1' from the in-memory cache
-// const resultInMemory = await inMemoryCache.get('key1');
-// console.log(resultInMemory); // Output: null
-
 const cacheService = new CacheService({
     useRedis: false,
     maxInMemoryCount: 999_999,

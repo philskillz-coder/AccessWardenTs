@@ -14,8 +14,9 @@ import { promisify } from "util";
 import ApiRouter from "./api-router";
 import assetsRouter from "./assets-router";
 import { AppDataSource } from "./database/data-source";
+import { Permission } from "./database/entity";
 import { User } from "./database/entity/User";
-import { CRequest } from "./express";
+import { PagePermissions } from "./database/required-data";
 
 // import WebSocketServer from "./websocket";
 
@@ -83,7 +84,7 @@ app.use(morgan("dev"));
 // app.use(passport.session());
 
 export const isDev = process.argv.find(arg => arg === "--dev") !== undefined || process.env.NODE_ENV === "development";
-console.log(`Running in ${isDev ? "development" : "production"} mode`);
+logger.info(`Running in ${isDev ? "development" : "production"} mode`);
 
 const distFolder = isDev ? path.join(__dirname, "..", "..", "public") : path.join(__dirname, "..", "..", "dist");
 // const ensureAuthenticated = (req, res, next) => {
@@ -109,14 +110,21 @@ export const setAsync = promisify(redisClient.set).bind(redisClient);
 
 AppDataSource.initialize()
     .then(() => {
-        console.log("Postgres Client started");
+        logger.info("Postgres Client started");
 
-        // Inject AppDataSource into the request object
-        app.use((req: CRequest, res, next) => {
-            req.appDataSource = AppDataSource;
-            next();
-        });
+        // TODO: create required roles if not exist
 
+        // check if all permissions exist
+        for (const permission of Object.values(PagePermissions)) {
+            AppDataSource.getRepository(Permission).findOne(
+                { where: { name: permission } }
+            ).then(p => {
+                if (!p) {
+                    logger.warn(`Permission ${permission} does not exist. Creating it...`);
+                    AppDataSource.getRepository(Permission).save({ name: permission, description: "Default app Permission" });
+                }
+            });
+        }
         // Use the API router
         app.use("/api", ApiRouter);
         app.use("/src", assetsRouter);
@@ -124,16 +132,15 @@ AppDataSource.initialize()
         // Start the server
         const PORT = process.env.PORT || 3000;
         app.listen(PORT, () => {
-            console.log(`Server is running on port ${PORT}`);
+            logger.info(`Server is running on port ${PORT}`);
         });
     })
     .catch(err => {
-        console.error(`Error initializing PostgreSQL: ${err}`);
+        logger.error(`Error initializing PostgreSQL: ${err}`);
     });
 
 const SERVER_PORT = Number(process.env.PORT) || 5050;
 app.listen(SERVER_PORT, () => {
-    console.log(`Server started on port ${SERVER_PORT}`);
-    // DB.then(() => console.log("MongoDB Client started")).catch(err => console.log(err));
+    logger.info(`Server started on port ${SERVER_PORT}`);
 });
 // export const WSS = new WebSocketServer(server);

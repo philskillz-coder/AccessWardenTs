@@ -8,7 +8,9 @@ import Dashboard from "@pages/Dashboard";
 import Landing from "@pages/Landing";
 import Login from "@pages/Login";
 import Register from "@pages/Register";
+import ViewUsers from "@pages/ViewUsers";
 import { Route, Routes, useNavigate } from "@solidjs/router";
+import { ApiResponseFlags } from "@typings";
 import { Component, createSignal, onMount } from "solid-js";
 
 import Store from "./Store";
@@ -42,10 +44,11 @@ const App: Component = () => {
 
     onMount(async () => {
         const res = await api.post("/api/auth/@me");
-        // if (res.hasError()) {
-        //     navigate("/login");
-        //     return;
-        // }
+        if (res.hasFlag(ApiResponseFlags.unauthorized)) {
+            console.log(window.location.href);
+            navigate("/login", { state: { returnUrl: window.location.href }});
+            return;
+        }
 
         setUser(res.data.user);
 
@@ -78,6 +81,7 @@ const App: Component = () => {
                     <Route path="/dashboard" element={<Dashboard store={store} />}/>
                     <Route path="/login" element={<Login store={store} />}/>
                     <Route path="/register" element={<Register store={store} />}/>
+                    <Route path="/v-users" element={<ViewUsers store={store} />}/>
                 </Routes>
                 <Modal
                     opened={isOpen()}

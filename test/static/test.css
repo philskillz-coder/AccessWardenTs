@@ -1,0 +1,95 @@
+html, body {
+    margin: 0;
+    padding: 5px;
+}
+
+html {
+    height: calc(100vh - 5px);
+    box-sizing: border-box;
+}
+
+body {
+    height: 100%;
+    box-sizing: border-box;
+}
+
+.scroll-menu {
+    border: 3px solid red;
+    /* padding: 5px; */
+}
+
+.scroll-menu > .scroll {
+    background-color: black;
+}
+
+.scroll-menu > .scroll > div {
+    background-color: gray;
+}
+
+@media screen and (max-width: 1200px) {
+    .scroll-menu {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .scroll-menu > .scroll {
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+
+    .scroll-menu > .scroll > div {
+        display: inline-block;
+        height: 50px;
+        width: 150px;
+        border-radius: 5%;
+    }
+
+    /* .scroll-menu > .scroll::-webkit-scrollbar {
+        display: none;
+    } */
+
+    .scroll-menu > .content {
+        margin-top: 5px;
+    }
+}
+
+@media screen and (min-width: 1200px) {
+    .scroll-menu {
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: row;
+        height: 100%;
+    }
+
+    .scroll-menu > .scroll {
+        box-sizing: border-box;
+        overflow-y: auto;
+        white-space: nowrap;
+        width: 300px;
+        height: 100%;
+    }
+
+    .scroll-menu > .scroll::-webkit-scrollbar {
+        display: none;
+    }
+
+    .scroll-menu > .scroll > div {
+        box-sizing: border-box; /* Ensure padding and border are included in the height and width */
+        height: 50px;
+        width: 100%;
+        border-radius: 5%;
+
+        &:not(:first-child) {
+            margin-top: 5px;
+        }
+    }
+
+    .scroll-menu > .content {
+        margin-left: 5px;
+        width: 100%
+    }
+}
+
+.content {
+    background-color: gray;
+}

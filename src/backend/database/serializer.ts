@@ -1,7 +1,7 @@
 import { CleanUser } from "@typings";
 import hashidService from "backend/services/HashidService";
 
-import { User } from "./entity";
+import { Permission, User } from "./entity";
 
 export function serializeUser(user: User): CleanUser {
     return {
@@ -15,4 +15,8 @@ export function serializeUser(user: User): CleanUser {
         createdAt: user.createdAt.toISOString(),
         updatedAt: user.updatedAt.toISOString(),
     };
+}
+
+export function serializePermissionHard(permission: Permission): string {
+    return permission.name;
 }

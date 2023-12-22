@@ -8,9 +8,11 @@ import {isDev} from "backend";
 import dotenv from "dotenv";
 import {Router} from "express";
 import speakeasy from "speakeasy";
+import { Like } from "typeorm";
 
 import {AppDataSource} from "./database/data-source";
-import {Permission, Role, RolePermission, User} from "./database/entity";
+import {Permission, RolePermission, User} from "./database/entity";
+import { PagePermissions } from "./database/required-data";
 import {serializeUser} from "./database/serializer";
 import {CRequest} from "./express";
 import cacheService from "./services/CacheService";
@@ -63,16 +65,21 @@ async function getUserPermissions(userId: number): Promise<Permission[]> {
         // check if the permissions are cached
         const cachedPermissions = await cacheService.get(`user-permissions-${userId}`);
         if (cachedPermissions) {
-            console.log("Using cached permissions");
             return cachedPermissions;
         }
 
-        // When here: permissions are not cached or caching is not allowed
+        // When here: permissions are not cached
         // Find the user with roles and rolePermissions
         const user = await AppDataSource.getRepository(User).findOne({
             where: { id: userId },
             relations: ["roles", "roles.rolePermissions", "roles.rolePermissions.role", "roles.rolePermissions.permission"],
         });
+
+        if (user.isAdmin) {
+            const permissions = (await AppDataSource.getRepository(Permission).find()).map(p => ({ ...p }));
+            await cacheService.set(`user-permissions-${userId}`, permissions);
+            return permissions;
+        }
 
         if (!user) {
             return [];
@@ -96,13 +103,11 @@ async function getUserPermissions(userId: number): Promise<Permission[]> {
             ...permission.permission
         }));
 
-        console.log("Caching permissions");
         await cacheService.set(`user-permissions-${userId}`, permissions);
 
         return permissions;
     } catch (error) {
-        // Handle any errors (e.g., database errors)
-        console.error("Error fetching user permissions:", error);
+        logger.error("Error fetching user permissions:", error);
         throw error;
     }
 }
@@ -121,65 +126,15 @@ async function hasPermissions<T>(userId: number, comp: (perm: Permission) => T, 
 // eslint-disable-next-line no-unused-vars
 function requirePermissions<T>(comp: (perm: Permission) => T, ...requiredPermissions: T[]) {
     const _requirePermissions = async (req: CRequest, res, next) => {
-        try {
-            const reqUser = <User>req.user;
-            let userRoles: Role[] | null = await cacheService.get(`user-roles-${reqUser.id}`);
-            let userPermissions: Permission[] | null = await cacheService.get(`user-permissions-${reqUser.id}`);
-
-            if (userRoles === null || userPermissions === null) {
-                const user = await AppDataSource.getRepository(User).findOne({
-                    where: { id: reqUser.id },
-                    relations: ["roles", "roles.rolePermissions", "roles.rolePermissions.role", "roles.rolePermissions.permission"],
-                });
-
-                if (!user) {
-                    userRoles = [];
-                    userPermissions = [];
-                }
-
-                if (userRoles === null) {
-                    userRoles = user.roles;
-                    console.log("Caching roles");
-                    await cacheService.set(`user-roles-${user.id}`, userRoles);
-                }
-
-                if (userPermissions === null) {
-                    const dbUserPermissions: Map<RolePermission, boolean> = new Map();
-
-                    // Iterate through user roles
-                    user.roles
-                        .forEach(role => {
-                            role.rolePermissions.sort((a, b) => b.role.power - a.role.power).forEach(rolePermission => {
-                            // check if the permission is not already in the map
-                                if (![...dbUserPermissions.keys()].find(rp => rp.permission.id === rolePermission.permission.id)) {
-                                    dbUserPermissions.set(rolePermission, rolePermission.hasPermission);
-                                }
-                            });
-                        });
-
-                    userPermissions = Array.from(dbUserPermissions.keys()).filter(rp => rp.hasPermission).map(rp => ({
-                        ...rp.permission
-                    }));
-                    console.log("Caching permissions");
-                    await cacheService.set(`user-permissions-${user.id}`, userPermissions);
-                }
-            }
-
-            const hasPermission = requiredPermissions.every(reqP => userPermissions.find(up => comp(up) === reqP));
-            if (hasPermission) {
-                next();
-            } else {
-                const rFlags = [ApiResponseFlags.forbidden];
-                if (!reqUser.mfaEnabled && userRoles.find(r => r.requiresMfa)) {
-                    rFlags.push(ApiResponseFlags.role_mfa_required);
-                }
-                res.status(403).json({ status: "error", message: "Forbidden", flags: rFlags });
-            }
-        } catch (error) {
-            // Handle any errors (e.g., database errors)
-            console.error("Error fetching user permissions:", error);
-            throw error;
+        const user: User | null = <User>req.user;
+        if (!user) {
+            return res.status(401).json({ status: "error", message: "Unauthorized", flags: [ApiResponseFlags.unauthorized] });
         }
+        if (user.isAdmin) return next();
+        if (!await hasPermissions(user.id, comp, ...requiredPermissions)) {
+            return res.status(403).json({ status: "error", message: "Forbidden", flags: [ApiResponseFlags.forbidden] });
+        }
+        next();
     };
     return _requirePermissions;
 }
@@ -494,15 +449,6 @@ ApiRouter.post("/user/update/password", ensureAuthenticated, validateMfaToken, a
 // - The target user is not admin
 // - The target user's "top" role is below yours
 
-// function requirePermissions(...permissions: string[]) {
-//     const _requirePermissions = (req: CRequest, res, next) => {
-//         const user = <User>res.user;
-//         const userPermissions = user.roles.map(v => v.role.permissions.map(p => p.permission));
-//         console.log(userPermissions);
-//     };
-//     return _requirePermissions;
-// }
-
 function targetUserNotAdmin(req: CRequest, res, next) {
     AppDataSource.getRepository(User).findOne({
         where: {
@@ -520,16 +466,213 @@ function targetUserNotAdmin(req: CRequest, res, next) {
     });
 }
 
-ApiRouter.post("/users/update/username", ensureAuthenticated, targetUserNotAdmin, (req: CRequest, res) => {
-    console.log("Users update");
-    const user = <User>req.user;
+ApiRouter.post("/mg/users/get", ensureAuthenticated, requirePermissions(
+    PermNameComp, PagePermissions.AdminViewUsers
+), async (req: CRequest, res) => {
+    const page = Number.parseInt(req.body.page) || 0;
+    const count = Number.parseInt(req.body.count) || 25;
+    const user: User = <User>req.user;
 
-    const start = new Date().getTime();
-    getUserPermissions(user.id).then(perms => {
-        const elapsed = new Date().getTime() - start;
-        res.status(200).json({perms, elapsed});
+    const users = await AppDataSource.getRepository(User).find({
+        relations: ["roles", "roles.rolePermissions", "roles.rolePermissions.role", "roles.rolePermissions.permission"],
+        skip: page * count,
+        take: count,
+        order: {
+            id: "ASC"
+        }
+    });
+
+    res.json({
+        status: "success",
+        data: {
+            users: users.map(user => serializeUser(user)),
+            permissions: (await getUserPermissions(user.id)).map(p => p.name)
+        }
     });
 });
+
+ApiRouter.post("/mg/users/search", ensureAuthenticated, requirePermissions(
+    PermNameComp, PagePermissions.AdminViewUsers
+), async (req: CRequest, res) => {
+    const search = "%" + req.body.search + "%";
+    const page = Number.parseInt(req.body.page) || 0;
+    const count = Number.parseInt(req.body.count) || 25;
+    const users = await AppDataSource.getRepository(User).find({
+        where: [
+            {
+                username: Like(search)
+            },
+            {
+                email: Like(search)
+            }
+        ],
+        relations: ["roles", "roles.rolePermissions", "roles.rolePermissions.role", "roles.rolePermissions.permission"],
+        skip: page * count,
+        take: count,
+        order: {
+            id: "ASC"
+        }
+    });
+
+    res.json({
+        status: "success",
+        data: {
+            users: users.map(user => serializeUser(user))
+        }
+    });
+});
+
+ApiRouter.post("/mg/users/up-username",
+    ensureAuthenticated,
+    requirePermissions(
+        PermNameComp, PagePermissions.AdminEditUserUsername
+    ),
+    targetUserNotAdmin,
+    async (req: CRequest, res) => {
+        const exists = await AppDataSource.getRepository(User).exist({
+            where: {
+                username: req.body.username
+            }
+        });
+        if (exists) {
+            res.status(400).json({
+                status: "error",
+                message: "Username is already taken"
+            });
+        }
+        const user = await AppDataSource.getRepository(User).findOne({
+            where: {
+                id: req.body.userId
+            }
+        });
+        if (!user) {
+            res.status(400).json({
+                status: "error",
+                message: "User not found"
+            });
+        }
+        user.username = req.body.username;
+        await AppDataSource.getRepository(User).save(user);
+        res.json({
+            status: "success",
+            message: "Username updated"
+        });
+    }
+);
+
+ApiRouter.post("/mg/users/up-email",
+    ensureAuthenticated,
+    requirePermissions(
+        PermNameComp, PagePermissions.AdminEditUserEmail
+    ),
+    targetUserNotAdmin,
+    async (req: CRequest, res) => {
+        const exists = await AppDataSource.getRepository(User).exist({
+            where: {
+                email: req.body.email
+            }
+        });
+        if (exists) {
+            res.status(400).json({
+                status: "error",
+                message: "Email is already taken"
+            });
+        }
+        const user = await AppDataSource.getRepository(User).findOne({
+            where: {
+                id: req.body.userId
+            }
+        });
+        if (!user) {
+            res.status(400).json({
+                status: "error",
+                message: "User not found"
+            });
+        }
+
+        user.email = req.body.email;
+        await AppDataSource.getRepository(User).save(user);
+        res.json({
+            status: "success",
+            message: "Email updated"
+        });
+    }
+);
+
+ApiRouter.post("/mg/users/up-password",
+    ensureAuthenticated,
+    validateMfaToken,
+    requirePermissions(
+        PermNameComp, PagePermissions.AdminEditUserPassword
+    ),
+    targetUserNotAdmin,
+    async (req: CRequest, res) => {
+        const user = await AppDataSource.getRepository(User).findOne({
+            where: {
+                id: req.body.userId
+            }
+        });
+        if (!user) {
+            res.status(400).json({
+                status: "error",
+                message: "User not found"
+            });
+        }
+
+        const salt = Hashing.generateSalt();
+        const passwordHash = Hashing.createHash(req.body.password, salt, process.env.HASH_PEPPER);
+        user.passwordHash = passwordHash;
+        user.passwordSalt = salt;
+        await AppDataSource.getRepository(User).save(user);
+        res.json({
+            status: "success",
+            message: "Password updated"
+        });
+    }
+);
+
+// ApiRouter.post("/mg/users/up-mfa",
+//     ensureAuthenticated,
+//     validateMfaToken,
+//     requirePermissions(
+//         PermNameComp, PagePermissions.AdminEditUserMfa
+//     ),
+//     targetUserNotAdmin,
+//     async (req: CRequest, res) => {
+//         const user = await AppDataSource.getRepository(User).findOne({
+//             where: {
+//                 id: req.body.userId
+//             }
+//         });
+//         if (!user) {
+//             res.status(400).json({
+//                 status: "error",
+//                 message: "User not found"
+//             });
+//         }
+
+//         if (req.body.mfaEnabled) {
+//             if (!req.body.secret) {
+//                 res.status(400).json({
+//                     status: "error",
+//                     message: "Missing Data"
+//                 });
+//             }
+
+//             user.mfaEnabled = true;
+//             user.mfaSecret = req.body.secret;
+//         } else {
+//             user.mfaEnabled = false;
+//             user.mfaSecret = null;
+//         }
+
+//         await AppDataSource.getRepository(User).save(user);
+//         res.json({
+//             status: "success",
+//             message: "MFA updated"
+//         });
+//     }
+// );
 
 ApiRouter.post("/perm/test", ensureAuthenticated, requirePermissions(PermNameComp, "Test"), (req: CRequest, res) => {
     res.json({status: "success", message: "You have the permission"});

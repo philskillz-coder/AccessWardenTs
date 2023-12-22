@@ -13,6 +13,7 @@ const Login = props => {
     const [password, setPassword] = createSignal(""); // password of the user
     const [showPassword, setShowPassword] = createSignal(false);
     const navigate = useNavigate();
+    // const location = useLocation();
 
     async function loginUser() {
         await api.post("/api/auth/login", {
@@ -32,7 +33,22 @@ const Login = props => {
                     description: "Logged in successfully"
                 });
                 store().setUser(res.data.user);
-                navigate("/account");
+
+                // const params = new URLSearchParams(window.location.search);
+                // const returnTo = params.get("return");
+                // const {returnTo} = location.state || {};
+                const returnTo = null;
+                // check if returnTo is valid url and same base as current url
+                try {
+                    // FIXME: fix redirect
+                    const url = new URL(returnTo);
+                    if (url.origin !== window.location.origin) {
+                        throw new Error("Invalid URL");
+                    }
+                    navigate(returnTo);
+                } finally {
+                    navigate("/account");
+                }
             }
         });
     }

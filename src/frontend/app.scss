@@ -1,10 +1,5 @@
 $SIDEBAR_WIDTH: 220px;
 
-.background {
-    background-color: var(--background);
-    height: 100dvh;
-}
-
 .sidebar {
     position: fixed;
     left: 0;
@@ -165,14 +160,6 @@ $INPUT_PLACEHOLDER: #CBD1DC;
 $JOIN_BUTTON_COLOR: #23a55a;
 $CREATE_BUTTON_COLOR: #678EFE;
 
-// --group-color: var(--input-color);
-// --group-border: var(--input-border);
-// --group-background: #EEF4FF;
-
-// --group-color-focus: #fff;
-// --group-border-focus: var(--input-border-focus);
-// --group-background-focus: #678EFE;
-
 .mt-1 {
     margin-top: 5px;
 }
@@ -184,13 +171,13 @@ $CREATE_BUTTON_COLOR: #678EFE;
 }
 
 .h-1 {
-    height: 40px;
+    height: 41px;
 }
 .h-2 {
-    height: 80px;
+    height: 82px;
 }
 .h-3 {
-    height: 120px;
+    height: 123px;
 }
 
 .w-10 { width: 10% !important; }
@@ -235,10 +222,38 @@ $CREATE_BUTTON_COLOR: #678EFE;
     color: #FBBF24 !important;
 }
 
-
-
 .bi {
     vertical-align: center;
+}
+
+input {
+    z-index: 1;
+    display: block;
+    position: relative;
+    flex: 1 1 auto;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding: 8px 16px;
+    line-height: 25px;
+    font-size: 14px;
+    border-radius: 6px;
+    color: var(--gray2);
+    background: none;
+    transition: border .3s ease, color .3s ease;
+
+    &::placeholder {
+        line-height: 25px; // Increase the line-height for larger placeholder
+        font-size: 14px; // Increase the font-size for larger placeholder
+        color: var(--gray2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    &:focus {
+        outline: none;
+        color: var(--text);
+    }
 }
 
 label {
@@ -247,6 +262,111 @@ label {
     text-align: left;
     display: block;
     margin-bottom: 5px;
+}
+
+.ui-scroll-menu {
+    &>.scroll-data {
+        border: 2px solid var(--gray2);
+        border-radius: 5px;
+        padding: 5px;
+
+        &>div {
+            display: flex;
+            align-items: center;
+            justify-content: center; /* Horizontally center the content in case of multi-line content */
+            text-align: center; /* Horizontally center the content */
+
+            &>button {
+                height: 100%;
+                width: 100%;
+                border-radius: 5px;
+                border: none;
+                background: none;
+                color: var(--text);
+                font-size: 16px;
+                font-weight: 500;
+                transition: background-color .3s ease, color .3s ease;
+
+                &:not(:disabled) {
+                    &:hover {
+                        cursor: pointer;
+                        background-color: var(--gray3);
+                    }
+                }
+            }
+        }
+    }
+
+    &>.scroll-content {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    @media screen and (max-width: 1200px) {
+        display: flex;
+        flex-direction: column;
+
+        &>.scroll-data {
+            overflow-x: auto;
+            white-space: nowrap;
+
+            &>div {
+                display: inline-block;
+                height: 50px;
+                width: 150px;
+                border-radius: 5%;
+
+                &:not(:last-child) {
+                    margin-right: 5px;
+                }
+            }
+        }
+
+        // & > .scroll::-webkit-scrollbar {
+        //     display: none;
+        // }
+
+        &>.scroll-content {
+            margin-top: 5px;
+            height: 100%;
+        }
+    }
+
+    @media screen and (min-width: 1200px) {
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: row;
+        height: 100%;
+
+        &>.scroll-data {
+            box-sizing: border-box;
+            overflow-y: auto;
+            white-space: nowrap;
+            width: 300px;
+            height: 100%;
+
+            &::-webkit-scrollbar {
+                display: none;
+            }
+
+            & > div {
+                box-sizing: border-box;
+                height: 50px;
+                width: 100%;
+                border-radius: 5px;
+
+                &:not(:first-child) {
+                    margin-top: 5px;
+                }
+            }
+        }
+
+        & > .scroll-content {
+            margin-left: 5px;
+            width: 100%;
+        }
+    }
 }
 
 .ui-modal {
@@ -291,23 +411,19 @@ label {
             display: flex;
             width: 100%;
             border-radius: 5px;
+            align-items: center;
+            justify-content: center; /* Horizontally center the content in case of multi-line content */
 
             &.border-center {
                 button, input, a {
                     &:not(:last-child) {
-                        border-right: 1px solid var(--gray2);
+                        border-right: 1px solid var(--gray2) !important;
                     }
                 }
             }
 
             &.border {
-                border: 1px solid var(--gray2);
-
-                button, input, a {
-                    &:not(:last-child) {
-                        border-right: 1px solid var(--gray2);
-                    }
-                }
+                border: 1px solid var(--gray2) !important;
             }
 
             &:not(:first-child) {
@@ -317,6 +433,13 @@ label {
             * {
                 background: none;
                 width: 100%;
+            }
+
+            &>p {
+                width: 100%;
+                height: 100%;
+                padding: 8px;
+                margin-bottom: 0;
             }
 
             button, a {
@@ -335,6 +458,8 @@ label {
                 user-select: none;
                 white-space: nowrap;
                 display: block;
+                height: 41px;
+
                 &:not(.no-dyn-txt) {
                     color: var(--text);
                 }

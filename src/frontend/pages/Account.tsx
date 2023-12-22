@@ -207,7 +207,7 @@ const Account = props => {
                 <div class="action border">
                     <input id="acc-password" type="password" placeholder="************" disabled/>
                     <button type="button" class="bg-info" style={{ width: "20%", padding: 0}} onClick={() => setEditingPassword(true)}>
-                        <div><BiSolidPencil size={15} color="#ffffff"/></div>
+                        <div class="ui-icon"><BiSolidPencil size={15} color="#ffffff"/></div>
                     </button>
                     <Modal opened={editingPassword()} onClose={closePasswordEditor} initialFocus="#acc-new-password">
                         <ModalOverlay />
