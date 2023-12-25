@@ -61,7 +61,6 @@ const Account = props => {
     }
 
     function disableMfa() {
-        setDisableMfaConfirmationRequired(false);
         api.post("/api/mfa/disable", {}, async res => {
             console.log("mfa disabled:", res);
             const currentUser = store().user();

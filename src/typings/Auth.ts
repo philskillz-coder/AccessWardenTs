@@ -8,4 +8,5 @@ export interface CleanUser {
     mfaEnabled: boolean;
     createdAt: string;
     updatedAt: string;
+    permissions: string[];
 }

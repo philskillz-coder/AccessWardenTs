@@ -32,9 +32,9 @@ const QuestionManager = props => {
 
     const [selectedFile, setSelectedFile] = createSignal(null);
 
-    // todo: does not work yet
-    // todo: scss grid full screen size
-    // todo: delete button
+    // TODO: does not work yet
+    // TODO: scss grid full screen size
+    // TODO: delete button
     const handleFileChange = event => {
         const file = event.target.files[0];
         setSelectedFile(file);

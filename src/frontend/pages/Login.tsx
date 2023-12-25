@@ -34,19 +34,12 @@ const Login = props => {
                 });
                 store().setUser(res.data.user);
 
-                // const params = new URLSearchParams(window.location.search);
-                // const returnTo = params.get("return");
-                // const {returnTo} = location.state || {};
-                const returnTo = null;
-                // check if returnTo is valid url and same base as current url
+                const params = new URLSearchParams(window.location.search);
+                const returnTo = params.get("return");
+
                 try {
-                    // FIXME: fix redirect
-                    const url = new URL(returnTo);
-                    if (url.origin !== window.location.origin) {
-                        throw new Error("Invalid URL");
-                    }
                     navigate(returnTo);
-                } finally {
+                } catch {
                     navigate("/account");
                 }
             }

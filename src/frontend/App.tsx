@@ -45,8 +45,17 @@ const App: Component = () => {
     onMount(async () => {
         const res = await api.post("/api/auth/@me");
         if (res.hasFlag(ApiResponseFlags.unauthorized)) {
-            console.log(window.location.href);
-            navigate("/login", { state: { returnUrl: window.location.href }});
+            const loginPath = "/login";
+            const currentPath = window.location.pathname + window.location.search;
+
+            if (window.location.pathname === loginPath) return;
+            if (window.location.pathname === "/register") return;
+
+            if (window.location.search !== "" || window.location.pathname !== "/") {
+                navigate(`${loginPath}?return=${encodeURIComponent(currentPath)}`);
+            } else {
+                navigate(loginPath);
+            }
             return;
         }
 

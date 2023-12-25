@@ -41,7 +41,7 @@ body {
         display: inline-block;
         height: 50px;
         width: 150px;
-        border-radius: 5%;
+        border-radius: 5px;
     }
 
     /* .scroll-menu > .scroll::-webkit-scrollbar {
@@ -77,11 +77,11 @@ body {
         box-sizing: border-box; /* Ensure padding and border are included in the height and width */
         height: 50px;
         width: 100%;
-        border-radius: 5%;
+        border-radius: 5px;
+    }
 
-        &:not(:first-child) {
-            margin-top: 5px;
-        }
+    .scroll-menu > .scroll > div:not(:first-child) {
+        margin-top: 5px;
     }
 
     .scroll-menu > .content {

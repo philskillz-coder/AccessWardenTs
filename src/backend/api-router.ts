@@ -11,11 +11,12 @@ import speakeasy from "speakeasy";
 import { Like } from "typeorm";
 
 import {AppDataSource} from "./database/data-source";
-import {Permission, RolePermission, User} from "./database/entity";
+import {Permission, User} from "./database/entity";
 import { PagePermissions } from "./database/required-data";
-import {serializeUser} from "./database/serializer";
+import {serializeUser, serializeUserWithPerms} from "./database/serializer";
 import {CRequest} from "./express";
-import cacheService from "./services/CacheService";
+import hashidService from "./services/HashidService";
+import { hasPermissions, PermNameComp } from "./services/PermissionsService";
 import temporaryValueService from "./services/TemporaryValueService";
 
 dotenv.config();
@@ -60,69 +61,6 @@ const validateMfaToken = (req, res, next) => {
     }
 };
 
-async function getUserPermissions(userId: number): Promise<Permission[]> {
-    try {
-        // check if the permissions are cached
-        const cachedPermissions = await cacheService.get(`user-permissions-${userId}`);
-        if (cachedPermissions) {
-            return cachedPermissions;
-        }
-
-        // When here: permissions are not cached
-        // Find the user with roles and rolePermissions
-        const user = await AppDataSource.getRepository(User).findOne({
-            where: { id: userId },
-            relations: ["roles", "roles.rolePermissions", "roles.rolePermissions.role", "roles.rolePermissions.permission"],
-        });
-
-        if (user.isAdmin) {
-            const permissions = (await AppDataSource.getRepository(Permission).find()).map(p => ({ ...p }));
-            await cacheService.set(`user-permissions-${userId}`, permissions);
-            return permissions;
-        }
-
-        if (!user) {
-            return [];
-        }
-
-        // Create a map to store the permissions with their corresponding status
-        const userPermissions: Map<RolePermission, boolean> = new Map();
-
-        // Iterate through user roles
-        user.roles.filter(role => !role.requiresMfa || user.mfaEnabled)
-            .forEach(role => {
-                role.rolePermissions.sort((a, b) => b.role.power - a.role.power).forEach(rolePermission => {
-                    // check if the permission is not already in the map
-                    if (![...userPermissions.keys()].find(rp => rp.permission.id === rolePermission.permission.id)) {
-                        userPermissions.set(rolePermission, rolePermission.hasPermission);
-                    }
-                });
-            });
-
-        const permissions: Permission[] = Array.from(userPermissions.keys()).filter(rp => rp.hasPermission).map(permission => ({
-            ...permission.permission
-        }));
-
-        await cacheService.set(`user-permissions-${userId}`, permissions);
-
-        return permissions;
-    } catch (error) {
-        logger.error("Error fetching user permissions:", error);
-        throw error;
-    }
-}
-
-const PermNameComp = (p: Permission): string => {
-    return p.name;
-};
-
-// eslint-disable-next-line no-unused-vars
-async function hasPermissions<T>(userId: number, comp: (perm: Permission) => T, ...requiredPermissions: T[]): Promise<boolean> {
-    const userPermissions = await getUserPermissions(userId);
-    const hasPermission = requiredPermissions.every(reqP => userPermissions.find(up => comp(up) === reqP));
-    return hasPermission;
-}
-
 // eslint-disable-next-line no-unused-vars
 function requirePermissions<T>(comp: (perm: Permission) => T, ...requiredPermissions: T[]) {
     const _requirePermissions = async (req: CRequest, res, next) => {
@@ -139,12 +77,12 @@ function requirePermissions<T>(comp: (perm: Permission) => T, ...requiredPermiss
     return _requirePermissions;
 }
 
-ApiRouter.post("/auth/@me", ensureAuthenticated, (req, res) => {
+ApiRouter.post("/auth/@me", ensureAuthenticated, async (req, res) => {
     if (!(req.user instanceof User)) return res.status(500).json({ status: "error", message: "Internal Server Error" });
     res.json({status: "success", data: {user: serializeUser(req.user)}});
 });
 
-ApiRouter.post("/auth/login", (req, res) => {
+ApiRouter.post("/auth/login", async (req, res) => {
     if (!req.body.username || !req.body.password) {
         return res.status(400).json({ status: "error", message: "Missing required fields" });
     }
@@ -182,7 +120,7 @@ ApiRouter.post("/auth/login", (req, res) => {
                 }
             }
 
-            req.login(user, loginErr => {
+            req.login(user, async loginErr => {
                 if (loginErr) {
                     logger.error(`Error logging in user ${user.username}: ${loginErr}`);
                     // Handle error, e.g., return a JSON response with an error message
@@ -191,7 +129,7 @@ ApiRouter.post("/auth/login", (req, res) => {
                 }
 
                 // Return a JSON response indicating successful login
-                res.status(200).json({ status: "success", message: "User logged in successfully", data: { user: serializeUser(user) }});
+                res.status(200).json({ status: "success", message: "User logged in successfully", data: { user: await serializeUserWithPerms(user) }});
             });
         })
         .catch(error => {
@@ -255,7 +193,7 @@ ApiRouter.post("/auth/register", async function(req: CRequest, res) {
     try {
         await AppDataSource.getRepository(User).save(user);
 
-        req.login(user, loginErr => {
+        req.login(user, async loginErr => {
             if (loginErr) {
                 logger.error(`Error logging in user ${user.username}: ${loginErr}`);
                 // Handle error, e.g., return a JSON response with an error message
@@ -263,7 +201,7 @@ ApiRouter.post("/auth/register", async function(req: CRequest, res) {
             }
 
             // Return a JSON response indicating successful registration and login
-            return res.status(201).json({ status: "success", message: "User registered and logged in successfully", data: { user: serializeUser(user) } });
+            return res.status(201).json({ status: "success", message: "User registered and logged in successfully", data: { user: await serializeUserWithPerms(user) } });
         });
     } catch (error) {
         res.status(500).json({ status: "error", message: "Internal Server Error" });
@@ -450,9 +388,11 @@ ApiRouter.post("/user/update/password", ensureAuthenticated, validateMfaToken, a
 // - The target user's "top" role is below yours
 
 function targetUserNotAdmin(req: CRequest, res, next) {
+    // TODO: allow if user is self
+    const userId = Number(hashidService.users.decode(req.body.userId)[0]);
     AppDataSource.getRepository(User).findOne({
         where: {
-            id: req.body.userId
+            id: userId
         }
     }).then(targetUser => {
         if (targetUser.isAdmin) {
@@ -466,12 +406,42 @@ function targetUserNotAdmin(req: CRequest, res, next) {
     });
 }
 
+ApiRouter.post("/mg/users/login-as", ensureAuthenticated, requirePermissions(
+    PermNameComp, PagePermissions.AdminLoginAs
+), targetUserNotAdmin, async (req: CRequest, res) => {
+    const user: User = <User>req.user;
+
+    const userId = Number(hashidService.users.decode(req.body.userId)[0]);
+    const targetUser = await AppDataSource.getRepository(User).findOne({
+        where: {
+            id: userId
+        }
+    });
+
+    if (!targetUser) {
+        res.status(400).json({
+            status: "error",
+            message: "User not found"
+        });
+    }
+
+    req.logIn(targetUser, async loginErr => {
+        if (loginErr) {
+            logger.error(`Error logging in user ${user.username}: ${loginErr}`);
+            // Handle error, e.g., return a JSON response with an error message
+            return res.status(500).json({ status: "error", message: "Internal Server Error" });
+        }
+
+        // Return a JSON response indicating successful login
+        res.status(200).json({ status: "success", message: "User logged in successfully", data: { user: serializeUser(targetUser) }});
+    });
+});
+
 ApiRouter.post("/mg/users/get", ensureAuthenticated, requirePermissions(
     PermNameComp, PagePermissions.AdminViewUsers
 ), async (req: CRequest, res) => {
     const page = Number.parseInt(req.body.page) || 0;
     const count = Number.parseInt(req.body.count) || 25;
-    const user: User = <User>req.user;
 
     const users = await AppDataSource.getRepository(User).find({
         relations: ["roles", "roles.rolePermissions", "roles.rolePermissions.role", "roles.rolePermissions.permission"],
@@ -485,8 +455,7 @@ ApiRouter.post("/mg/users/get", ensureAuthenticated, requirePermissions(
     res.json({
         status: "success",
         data: {
-            users: users.map(user => serializeUser(user)),
-            permissions: (await getUserPermissions(user.id)).map(p => p.name)
+            users: users.map(user => serializeUser(user))
         }
     });
 });
@@ -497,6 +466,7 @@ ApiRouter.post("/mg/users/search", ensureAuthenticated, requirePermissions(
     const search = "%" + req.body.search + "%";
     const page = Number.parseInt(req.body.page) || 0;
     const count = Number.parseInt(req.body.count) || 25;
+    // TODO: case insensitive search
     const users = await AppDataSource.getRepository(User).find({
         where: [
             {
@@ -539,18 +509,24 @@ ApiRouter.post("/mg/users/up-username",
                 status: "error",
                 message: "Username is already taken"
             });
+            return;
         }
+
+        const userId = Number(hashidService.users.decode(req.body.userId)[0]);
         const user = await AppDataSource.getRepository(User).findOne({
             where: {
-                id: req.body.userId
+                id: userId
             }
         });
+
         if (!user) {
             res.status(400).json({
                 status: "error",
                 message: "User not found"
             });
+            return;
         }
+
         user.username = req.body.username;
         await AppDataSource.getRepository(User).save(user);
         res.json({
@@ -577,17 +553,22 @@ ApiRouter.post("/mg/users/up-email",
                 status: "error",
                 message: "Email is already taken"
             });
+            return;
         }
+
+        const userId = Number(hashidService.users.decode(req.body.userId)[0]);
         const user = await AppDataSource.getRepository(User).findOne({
             where: {
-                id: req.body.userId
+                id: userId
             }
         });
+
         if (!user) {
             res.status(400).json({
                 status: "error",
                 message: "User not found"
             });
+            return;
         }
 
         user.email = req.body.email;
@@ -607,18 +588,22 @@ ApiRouter.post("/mg/users/up-password",
     ),
     targetUserNotAdmin,
     async (req: CRequest, res) => {
+        const userId = Number(hashidService.users.decode(req.body.userId)[0]);
         const user = await AppDataSource.getRepository(User).findOne({
             where: {
-                id: req.body.userId
+                id: userId
             }
         });
+
         if (!user) {
             res.status(400).json({
                 status: "error",
                 message: "User not found"
             });
+            return;
         }
 
+        // no password validation and verification because the admin can set any password
         const salt = Hashing.generateSalt();
         const passwordHash = Hashing.createHash(req.body.password, salt, process.env.HASH_PEPPER);
         user.passwordHash = passwordHash;
@@ -630,6 +615,30 @@ ApiRouter.post("/mg/users/up-password",
         });
     }
 );
+
+ApiRouter.post("/mg/users/delete", ensureAuthenticated, requirePermissions(
+    PermNameComp, PagePermissions.AdminEditUserDelete
+), targetUserNotAdmin, async (req: CRequest, res) => {
+    const userId = Number(hashidService.users.decode(req.body.userId)[0]);
+    const user = await AppDataSource.getRepository(User).findOne({
+        where: {
+            id: userId
+        }
+    });
+    if (!user) {
+        res.status(400).json({
+            status: "error",
+            message: "User not found"
+        });
+        return;
+    }
+
+    await AppDataSource.getRepository(User).remove(user);
+    res.json({
+        status: "success",
+        message: "User deleted"
+    });
+});
 
 // ApiRouter.post("/mg/users/up-mfa",
 //     ensureAuthenticated,

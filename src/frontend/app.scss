@@ -227,19 +227,21 @@ $CREATE_BUTTON_COLOR: #678EFE;
 }
 
 input {
-    z-index: 1;
+    // z-index: 1;
     display: block;
     position: relative;
     flex: 1 1 auto;
     margin-top: 0;
     margin-bottom: 0;
     padding: 8px 16px;
+    width: 100%;
     line-height: 25px;
     font-size: 14px;
     border-radius: 6px;
-    color: var(--gray2);
+    color: var(--text);
     background: none;
     transition: border .3s ease, color .3s ease;
+    border: 1px solid var(--gray3);
 
     &::placeholder {
         line-height: 25px; // Increase the line-height for larger placeholder
@@ -250,9 +252,14 @@ input {
         justify-content: center;
     }
 
+    &:disabled {
+        cursor: default;
+        color: var(--gray2);
+    }
+
     &:focus {
         outline: none;
-        color: var(--text);
+        border: 1px solid var(--gray2);
     }
 }
 
@@ -298,10 +305,25 @@ label {
     }
 
     &>.scroll-content {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
+        &.center {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        &.center-v {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        &.center-h {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
     }
+
 
     @media screen and (max-width: 1200px) {
         display: flex;
@@ -311,11 +333,20 @@ label {
             overflow-x: auto;
             white-space: nowrap;
 
+            &>.pinned {
+                height: max-content;
+                display: flex;
+                flex-direction: column;
+                margin: 0;
+                margin-bottom: 10px;
+                width: 100%;
+            }
+
             &>div {
                 display: inline-block;
                 height: 50px;
                 width: 150px;
-                border-radius: 5%;
+                border-radius: 5px;
 
                 &:not(:last-child) {
                     margin-right: 5px;
@@ -345,6 +376,15 @@ label {
             white-space: nowrap;
             width: 300px;
             height: 100%;
+
+            &>.pinned {
+                height: max-content;
+                display: flex;
+                flex-direction: column;
+                margin: 0;
+                width: 100%;
+                position: sticky;
+            }
 
             &::-webkit-scrollbar {
                 display: none;
@@ -539,6 +579,10 @@ label {
                 &:not(:disabled) {
                     &:hover {
                         filter: brightness(85%);
+                    }
+                    &.active {
+                        background-color: var(--gray3);
+                        transition: color .3s ease;
                     }
                 }
             }
