@@ -22,6 +22,15 @@ export class ApiResponse {
         this.flags = response.flags || [];
     }
 
+    static fromError(error: string) {
+        return new ApiResponse({
+            status: "error",
+            message: error,
+            data: null,
+            flags: [],
+        });
+    }
+
     hasError() {
         return this.status === "error";
     }

@@ -11,7 +11,7 @@ import speakeasy from "speakeasy";
 import { Like } from "typeorm";
 
 import {AppDataSource} from "./database/data-source";
-import {Permission, User} from "./database/entity";
+import {Permission, Role, User} from "./database/entity";
 import { PagePermissions } from "./database/required-data";
 import {serializeUser, serializeUserWithPerms} from "./database/serializer";
 import {CRequest} from "./express";
@@ -79,7 +79,7 @@ function requirePermissions<T>(comp: (perm: Permission) => T, ...requiredPermiss
 
 ApiRouter.post("/auth/@me", ensureAuthenticated, async (req, res) => {
     if (!(req.user instanceof User)) return res.status(500).json({ status: "error", message: "Internal Server Error" });
-    res.json({status: "success", data: {user: serializeUser(req.user)}});
+    res.json({status: "success", data: {user: serializeUserWithPerms(req.user)}});
 });
 
 ApiRouter.post("/auth/login", async (req, res) => {
@@ -460,6 +460,48 @@ ApiRouter.post("/mg/users/get", ensureAuthenticated, requirePermissions(
     });
 });
 
+ApiRouter.post("/mg/users/get-all-roles", ensureAuthenticated, requirePermissions(
+    PermNameComp, PagePermissions.AdminViewUsers
+), async (req: CRequest, res) => {
+    const userId = Number(hashidService.users.decode(req.body.userId)[0]);
+    const user = await AppDataSource.getRepository(User).findOne({
+        where: {
+            id: userId
+        },
+        relations: ["roles"]
+    });
+
+    if (!user) {
+        res.status(400).json({
+            status: "error",
+            message: "User not found"
+        });
+        return;
+    }
+
+    const roles = await AppDataSource.getRepository(Role).find(
+        {
+            relations: ["rolePermissions", "rolePermissions.permission"],
+            order: {
+                name: "ASC"
+            }
+        }
+    );
+
+    const userRoles = roles.map(role => ({
+        id: hashidService.roles.encode(role.id),
+        name: role.name,
+        has: user.roles.some(userRole => userRole.id === role.id)
+    }));
+
+    res.json({
+        status: "success",
+        data: {
+            roles: userRoles
+        }
+    });
+});
+
 ApiRouter.post("/mg/users/search", ensureAuthenticated, requirePermissions(
     PermNameComp, PagePermissions.AdminViewUsers
 ), async (req: CRequest, res) => {
@@ -615,6 +657,62 @@ ApiRouter.post("/mg/users/up-password",
         });
     }
 );
+
+ApiRouter.post("/mg/users/up-roles", ensureAuthenticated, requirePermissions(
+    PermNameComp, PagePermissions.AdminEditUserRoles
+), targetUserNotAdmin, async (req: CRequest, res) => {
+    if (!req.body.roles) {
+        res.status(400).json({
+            status: "error",
+            message: "Missing Data"
+        });
+        return;
+    }
+
+    const userId = Number(hashidService.users.decode(req.body.userId)[0]);
+    const user = await AppDataSource.getRepository(User).findOne({
+        where: {
+            id: userId
+        },
+        relations: ["roles"]
+    });
+
+    if (!user) {
+        res.status(400).json({
+            status: "error",
+            message: "User not found"
+        });
+        return;
+    }
+
+    const editedRoles: {id: number, has: boolean}[] = req.body.roles.map(role => ({
+        ...role,
+        id: Number(hashidService.roles.decode(role.id)[0])
+    }));
+
+    const allRoles = await AppDataSource.getRepository(Role).find();
+    console.log(allRoles);
+    const newRoles = [];
+
+    allRoles.forEach(role => {
+        const editedRole = editedRoles.find(r => r.id === role.id);
+        if (editedRole !== undefined) {
+            newRoles.push({...role, has: editedRole.has});
+        } else {
+            const role = user.roles.find(r => r.id === role.id);
+            if (role) {
+                newRoles.push(role);
+            }
+        }
+    });
+
+    user.roles = newRoles;
+    await AppDataSource.getRepository(User).save(user);
+    res.json({
+        status: "success",
+        message: "Roles updated"
+    });
+});
 
 ApiRouter.post("/mg/users/delete", ensureAuthenticated, requirePermissions(
     PermNameComp, PagePermissions.AdminEditUserDelete

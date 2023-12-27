@@ -6,35 +6,35 @@ import { Button, FormControl, FormLabel, Modal, ModalBody, ModalFooter, ModalHea
 import { Input, ModalCloseButton, ModalContent, ModalOverlay, notificationService } from "@hope-ui/solid";
 import { useNavigate } from "@solidjs/router";
 import { ApiResponseFlags, CleanUser } from "@typings";
-import { BiSolidPencil } from "solid-icons/bi";
+import { BiRegularCheck, BiRegularX, BiSolidPencil } from "solid-icons/bi";
 import { createSignal, For, onCleanup, Show } from "solid-js";
 
 import Store from "../Store";
 import { api } from "../utils";
 
 function ViewUsers(props) {
-    // eslint-disable-next-line no-unused-vars
+    type _Role = {id: string, name: string, has: boolean};
+
     const store: () => Store = props.store;
     const [users, setUsers] = createSignal([]);
-    // eslint-disable-next-line no-unused-vars
     const [search, setSearch] = createSignal("");
     let searchTimeout: NodeJS.Timeout | null = null;
 
     const [selectedUser, setSelectedUser] = createSignal<CleanUser | null>(null);
+    const [selectedUserRoles, setSelectedUserRoles] = createSignal<_Role[] | null>(null);
+    const [displayedUserRoles, setDisplayedUserRoles] = createSignal<_Role[] | null>(null);
 
-    // eslint-disable-next-line no-unused-vars
     const [editingEmail, setEditingEmail] = createSignal(false);
     const [newEmail, setNewEmail] = createSignal<string | null>(null);
-    // eslint-disable-next-line no-unused-vars
     const [editingUsername, setEditingUsername] = createSignal(false);
     const [newUsername, setNewUsername] = createSignal<string | null>(null);
-    // eslint-disable-next-line no-unused-vars
     const [editingPassword, setEditingPassword] = createSignal(false);
     const [newPassword, setNewPassword] = createSignal<string | null>(null);
 
     const [deleteUserCR, setDeleteUserCR] = createSignal(false);
 
     const [hasPagePermission, setHasPagePermission] = createSignal<boolean | null>(null);
+
 
     const navigate = useNavigate();
     let page = 0;
@@ -68,6 +68,21 @@ function ViewUsers(props) {
 
     function hasPermission(permission: string) {
         return store().user().permissions.includes(permission);
+    }
+
+    function getSelectedUserRoles() {
+        api.post("/api/mg/users/get-all-roles", { userId: selectedUser().id }, async res => {
+            if (res.hasError()) {
+                notificationService.show({
+                    status: "danger",
+                    title: "Error",
+                    description: res.message
+                });
+            } else {
+                setSelectedUserRoles(res.data.roles);
+                setDisplayedUserRoles(res.data.roles.map(role => ({...role})));
+            }
+        });
     }
 
     function doSearch() {
@@ -284,13 +299,91 @@ function ViewUsers(props) {
     function toggleInfo() {
         setShowInfo(!showInfo());
         setShowRoles(!showRoles());
+
+        if (showRoles() && selectedUserRoles() === null) {
+            getSelectedUserRoles();
+        }
+    }
+
+    function selectUser(user: CleanUser) {
+        setShowRoles(false);
+        setShowInfo(true);
+        setSelectedUserRoles(null);
+        setDisplayedUserRoles(null);
+        setSelectedUser(user);
+    }
+
+    function toggleUserRole(role: _Role) { // 'addRoleToUser' is declared but its value is never read. :(((((((((((
+        setDisplayedUserRoles(prevRoles => {
+            if (prevRoles === null) {
+                return null;
+            }
+
+            const updatedRoles = [...prevRoles];
+            const roleIndex = updatedRoles.findIndex(r => r.id === role.id);
+            updatedRoles[roleIndex].has = !updatedRoles[roleIndex].has;
+
+            return updatedRoles;
+        });
+    }
+
+    function getRoleStatus(roleId: string) {
+        return displayedUserRoles().find(role => role.id === roleId).has;
+    }
+
+    function getChangedRoles() {
+        const selectedRoles = selectedUserRoles();
+        const displayedRoles = displayedUserRoles();
+
+        // Check if both arrays are non-null
+        if (selectedRoles === null || displayedRoles === null) {
+            return [];
+        }
+
+        // Find roles with changes in the .has property
+        const changedRoles = displayedRoles.filter((displayedRole, index) => {
+            const selectedRole = selectedRoles[index];
+
+            // Check if .has property has changed
+            return selectedRole && displayedRole && selectedRole.has !== displayedRole.has;
+        });
+        return changedRoles;
+    }
+
+    function resetChangedRoles() {
+        setDisplayedUserRoles(selectedUserRoles()?.map(role => ({...role})));
+    }
+
+    function saveChangedRoles() {
+        const changedRoles = getChangedRoles();
+
+        if (changedRoles.length === 0) {
+            return;
+        }
+
+        api.post("/api/mg/users/up-roles", { userId: selectedUser().id, roles: changedRoles.map(r => ({id: r.id, has: r.has})) }, async res => {
+            if (res.hasError()) {
+                notificationService.show({
+                    status: "danger",
+                    title: "Error",
+                    description: res.message
+                });
+            } else {
+                notificationService.show({
+                    status: "success",
+                    title: "Success",
+                    description: "Roles updated"
+                });
+                setSelectedUserRoles(displayedUserRoles()?.map(role => ({...role})));
+            }
+        });
     }
 
     return (
         <ShowIfPermission hasPermission={hasPagePermission}>
 
-            <div class="ui-scroll-menu">
-                <div id="vu-data" class="scroll-data">
+            <div class="ui-scroller-menu">
+                <div id="vu-data" class="ui-scroller">
                     <div class="pinned">
                         <label for="mg-search-usr">Search</label>
                         <input id="mg-search-usr" placeholder="..." onInput={e => searchUsers(e.target.value)}/>
@@ -298,21 +391,21 @@ function ViewUsers(props) {
                     <For each={users()}>
                         {user => (
                             <div class="ui-bg-gray5">
-                                <button onClick={() => setSelectedUser(user)}>
+                                <button onClick={() => selectUser(user)}>
                                     {user.username}
                                 </button>
                             </div>
                         )}
                     </For>
                 </div>
-                <div class="scroll-content center">
+                <div class="ui-scroller-content center">
                     <Show when={selectedUser()}>
                         <div class="ui-modal w-40">
                             <h1>{selectedUser().username}</h1>
                             <div class="actions">
                                 <div class="action border">
-                                    <button classList={{"active": showInfo()}} onClick={toggleInfo}>Info</button>
-                                    <button classList={{"active": showRoles()}} onClick={toggleInfo}>Roles</button>
+                                    <button classList={{"active": showInfo()}} onClick={toggleInfo} disabled={showInfo()}>Info</button>
+                                    <button classList={{"active": showRoles()}} onClick={toggleInfo} disabled={showRoles()}>Roles</button>
                                 </div>
                                 <Show when={showInfo()}>
                                     <label for="mg-acc-mail">Email</label>
@@ -322,7 +415,7 @@ function ViewUsers(props) {
                                             type="button"
                                             class="bg-info ui-icon w-20"
                                             onClick={() => setEditingEmail(true)}
-                                            title={hasPermission("Admin.Edit.User.Email") ? "You don't have the permission to do that!" : ""}
+                                            title={!hasPermission("Admin.Edit.User.Email") ? "You don't have the permission to do that!" : ""}
                                             disabled={!hasPermission("Admin.Edit.User.Email")}
                                         >
                                             <div><BiSolidPencil size={15} color="#ffffff"/></div>
@@ -351,7 +444,7 @@ function ViewUsers(props) {
                                             type="button"
                                             class="bg-info ui-icon w-20"
                                             onClick={() => setEditingUsername(true)}
-                                            title={hasPermission("Admin.Edit.User.Username") ? "You don't have the permission to do that!" : ""}
+                                            title={!hasPermission("Admin.Edit.User.Username") ? "You don't have the permission to do that!" : ""}
                                             disabled={!hasPermission("Admin.Edit.User.Username")}
                                         >
                                             <div><BiSolidPencil size={15} color="#ffffff"/></div>
@@ -380,7 +473,7 @@ function ViewUsers(props) {
                                             type="button"
                                             class="bg-info ui-icon w-20"
                                             onClick={() => setEditingPassword(true)}
-                                            title={hasPermission("Admin.Edit.User.Password") ? "You don't have the permission to do that!" : ""}
+                                            title={!hasPermission("Admin.Edit.User.Password") ? "You don't have the permission to do that!" : ""}
                                             disabled={!hasPermission("Admin.Edit.User.Password")}
                                         >
                                             <div><BiSolidPencil size={15} color="#ffffff"/></div>
@@ -405,7 +498,7 @@ function ViewUsers(props) {
                                     <div class="action bg-info">
                                         <button
                                             type="button"
-                                            title={hasPermission("Admin.LoginAsUser") ? "You don't have the permission to do that!" : ""}
+                                            title={!hasPermission("Admin.LoginAsUser") ? "You don't have the permission to do that!" : ""}
                                             disabled={!hasPermission("Admin.LoginAs")}
                                             onClick={() => loginAsUser()}
                                         >
@@ -415,7 +508,7 @@ function ViewUsers(props) {
                                     <div class="action bg-danger">
                                         <button
                                             type="button"
-                                            title={hasPermission("Admin.Edit.User.Delete") ? "You don't have the permission to do that!" : ""}
+                                            title={!hasPermission("Admin.Edit.User.Delete") ? "You don't have the permission to do that!" : ""}
                                             disabled={!hasPermission("Admin.Edit.User.Delete")}
                                             onClick={() => setDeleteUserCR(true)}
                                         >
@@ -426,9 +519,62 @@ function ViewUsers(props) {
                                         </ModalConfirmation>
                                     </div>
                                 </Show>
+
                                 <Show when={showRoles()}>
-                                    {/* TODO: scrollable container */}
-                                    <></>
+                                    <div class="ui-scroller w-100 mt-2" style={{"max-height": "250px"}}>
+                                        <For each={displayedUserRoles()}>
+                                            {role => (
+                                                <div class="ui-bg-gray4 action">
+                                                    <button
+                                                        type="button"
+                                                        disabled={!hasPermission("Admin.Edit.User.Roles")}
+                                                    >
+                                                        {role.name}
+                                                    </button>
+                                                    <button
+                                                        class="ui-icon w-20"
+                                                        classList={{
+                                                            "bg-success": getRoleStatus(role.id)
+                                                        }}
+                                                        disabled={!(hasPermission("Admin.Edit.User.Roles") && !getRoleStatus(role.id))}
+                                                        onClick={() => toggleUserRole(role)}
+                                                    >
+                                                        <div><BiRegularCheck size={15} color="#ffffff"/></div>
+                                                    </button>
+                                                    <button
+                                                        class="ui-icon w-20"
+                                                        classList={{
+                                                            "bg-danger": !getRoleStatus(role.id)
+                                                        }}
+                                                        disabled={!(hasPermission("Admin.Edit.User.Roles") && getRoleStatus(role.id))}
+                                                        onClick={() => toggleUserRole(role)}
+                                                    >
+                                                        <div><BiRegularX size={15} color="#ffffff"/></div>
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </For>
+                                    </div>
+                                    <div class="action">
+                                        <button
+                                            type="button"
+                                            class="bg-info"
+                                            title={!hasPermission("Admin.Edit.User.Roles") ? "You don't have the permission to do that!" : ""}
+                                            disabled={!(hasPermission("Admin.Edit.User.Roles") && (getChangedRoles()?.length || 0) > 0)}
+                                            onClick={() => resetChangedRoles()}
+                                        >
+                                            Reset
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="bg-info"
+                                            title={!hasPermission("Admin.Edit.User.Roles") ? "You don't have the permission to do that!" : ""}
+                                            disabled={!(hasPermission("Admin.Edit.User.Roles") && (getChangedRoles()?.length || 0) > 0)}
+                                            onClick={() => saveChangedRoles()}
+                                        >
+                                            Save
+                                        </button>
+                                    </div>
                                 </Show>
                             </div>
                         </div>

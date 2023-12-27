@@ -38,56 +38,63 @@ export class ApiInterface {
     }
 
     async callApi(path: string, method: string, body?: any, calllback?: CALLBACK, cancel?: CANCEL_CALLBACK): Promise<ApiResponse> {
-        if (calllback != null) this.callback = calllback;
-        if (cancel != null) this.cancelCallback = cancel;
+        try {
+            if (calllback != null) this.callback = calllback;
+            if (cancel != null) this.cancelCallback = cancel;
 
-        const resp = await fetch(path, {
-            method: method,
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: (body != null ? JSON.stringify(body) : "{}"),
-        });
+            const resp = await fetch(path, {
+                method: method,
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: (body != null ? JSON.stringify(body) : "{}"),
+            });
 
-        const json = await resp.json();
-        const apiResp = new ApiResponse(json);
+            const json = await resp.json();
+            const apiResp = new ApiResponse(json);
 
-        if (apiResp.hasFlag(ApiResponseFlags.mfa_required)) {
-            // save state
-            this.mfaRunning = true;
-            this.lastMethod = method;
-            this.lastPath = path;
-            this.lastBody = body;
+            if (apiResp.hasFlag(ApiResponseFlags.mfa_required)) {
+                // save state
+                this.mfaRunning = true;
+                this.lastMethod = method;
+                this.lastPath = path;
+                this.lastBody = body;
 
-            // security timeout
-            this.setSecurityTimeout();
+                // security timeout
+                this.setSecurityTimeout();
 
-            this.mfaRequiredCallback();
-            throw new Error("MFA Required");
+                this.mfaRequiredCallback();
+                throw new Error("MFA Required");
+            }
+
+            if (apiResp.hasFlag(ApiResponseFlags.mfa_invalid)) {
+                // reset security timeout
+                this.setSecurityTimeout();
+
+                this.mfaInvalidCallback();
+                throw new Error("MFA Invalid");
+            }
+
+            if (this.mfaRunning === true) { // mfa was successful: delete state
+                this.mfaSuccessCallback();
+                this.mfaRunning = false;
+                this.lastMethod = null;
+                this.lastBody = null;
+                this.lastPath = null;
+                clearTimeout(this.timeout);
+                this.timeout = null;
+            }
+
+            if (this.callback != null) {
+                await this.callback(apiResp);
+            }
+            return apiResp;
+        } catch (err) {
+            if (this.callback != null) {
+                const resp = ApiResponse.fromError(err.message);
+                await this.callback(err);
+            }
         }
-
-        if (apiResp.hasFlag(ApiResponseFlags.mfa_invalid)) {
-            // reset security timeout
-            this.setSecurityTimeout();
-
-            this.mfaInvalidCallback();
-            throw new Error("MFA Invalid");
-        }
-
-        if (this.mfaRunning === true) { // mfa was successful: delete state
-            this.mfaSuccessCallback();
-            this.mfaRunning = false;
-            this.lastMethod = null;
-            this.lastBody = null;
-            this.lastPath = null;
-            clearTimeout(this.timeout);
-            this.timeout = null;
-        }
-
-        if (this.callback != null) {
-            await this.callback(apiResp);
-        }
-        return apiResp;
     }
 
     async supplyMfaToken(token: string): Promise<void> {

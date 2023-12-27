@@ -12,7 +12,7 @@ export function ShowIfPermission(props: ShowIfPermissionProps) {
                 {props.children}
             </Show>
             <Show when={props.hasPermission() === false}>
-                <div class="ui-modal center">
+                <div class="ui-modal">
                     <h1>Access Denied</h1>
                     <span>You do not have permission to view this page.</span>
                 </div>
