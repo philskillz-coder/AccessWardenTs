@@ -10,3 +10,10 @@ export interface CleanUser {
     updatedAt: string;
     permissions: string[];
 }
+
+export interface CleanPermission {
+    id: string;
+    name: string;
+    // createdAt: string;
+    // updatedAt: string;
+}

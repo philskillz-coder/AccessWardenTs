@@ -17,6 +17,8 @@ function ViewUsers(props) {
 
     const store: () => Store = props.store;
     const [users, setUsers] = createSignal([]);
+    const [usersEndReached, setUsersEndReached] = createSignal(false);
+    const [usersLoading, setUsersLoading] = createSignal(false); // TODO: use this to show loading indicator
     const [search, setSearch] = createSignal("");
     let searchTimeout: NodeJS.Timeout | null = null;
 
@@ -54,16 +56,58 @@ function ViewUsers(props) {
                 return;
             }
 
+            if (res.data.users.length === 0) {
+                setUsersEndReached(true);
+            }
+
             if (page === 0) {
                 setUsers(res.data.users || []);
             } else {
                 setUsers([...users(), ...res.data.users || []]);
             }
+            console.log(users());
 
             if (res.data.users.length > 0) {
                 setSelectedUser(res.data.users[0]);
             }
         });
+    }
+
+    function doSearch() {
+        if (search() === "") { // reset search
+            setSearch("");
+            refreshUsers();
+            setUsersEndReached(false);
+        } else {
+            api.post("/api/mg/users/search", { page: page, count: count, search: search() }, async res => {
+                if (res.hasError()) {
+                    console.log(res.message);
+                    return;
+                }
+
+                if (res.data.users.length === 0) {
+                    setUsersEndReached(true);
+                }
+
+                if (page === 0) {
+                    setUsers(res.data.users || []);
+                } else {
+                    setUsers([...users(), ...res.data.users || []]); // append new users to the list
+                }
+            });
+        }
+    }
+
+    // eslint-disable-next-line no-unused-vars
+    function searchUsers(text: string) {
+        setSearch(text);
+        if (searchTimeout) {
+            clearTimeout(searchTimeout);
+        }
+        searchTimeout = setTimeout(() => {
+            page = 0;
+            doSearch();
+        }, 300);
     }
 
     function hasPermission(permission: string) {
@@ -83,28 +127,6 @@ function ViewUsers(props) {
                 setDisplayedUserRoles(res.data.roles.map(role => ({...role})));
             }
         });
-    }
-
-    function doSearch() {
-        api.post("/api/mg/users/search", { page: page, count: count, search: search() }, async res => {
-            if (page === 0) {
-                setUsers(res.data.users || []);
-            } else {
-                setUsers([...users(), ...res.data.users || []]);
-            }
-        });
-    }
-
-    // eslint-disable-next-line no-unused-vars
-    function searchUsers(text: string) {
-        setSearch(text);
-        if (searchTimeout) {
-            clearTimeout(searchTimeout);
-        }
-        searchTimeout = setTimeout(() => {
-            page = 0;
-            doSearch();
-        }, 300);
     }
 
     function closeEmailEditor() {
@@ -257,6 +279,15 @@ function ViewUsers(props) {
     // FIXME: fix multiple requests when scrolling
 
     function loadMoreUsers() {
+        if (usersEndReached() || usersLoading()) {
+            return;
+        }
+
+        setUsersLoading(true);
+        setTimeout(() => {
+            setUsersLoading(false);
+        }, 150);
+
         page++;
         if (search()) {
             doSearch();
@@ -265,17 +296,46 @@ function ViewUsers(props) {
         }
     }
 
+    const minWidthForVerticalScroll = 1200;
+
     function handleScroll() {
         const scrollContainer = document.getElementById("vu-data");
         if (scrollContainer) {
-            const { scrollTop, clientHeight, scrollHeight } = scrollContainer;
+            const { scrollTop, clientHeight, scrollWidth, scrollHeight, clientWidth } = scrollContainer;
 
-            if (scrollTop + clientHeight >= scrollHeight - 50) {
+            // Check the screen width using media query
+            const isVerticalScroll = window.matchMedia(`(min-width: ${minWidthForVerticalScroll}px)`).matches;
+
+            if (isVerticalScroll) {
+            // Check vertical scrolling
+                if (scrollTop + clientHeight >= scrollHeight - 50) {
                 // Load more items when the user is near the bottom
-                loadMoreUsers();
+                    console.log("near bottom");
+                    loadMoreUsers();
+                }
+            } else {
+            // Check horizontal scrolling
+                if (clientWidth + scrollContainer.scrollLeft >= scrollWidth - 50) {
+                // Load more items when the user is near the right edge
+                    console.log("near right edge");
+                    loadMoreUsers();
+                }
             }
         }
     }
+
+    // function handleScroll() {
+    //     const scrollContainer = document.getElementById("vu-data");
+    //     if (scrollContainer) {
+    //         const { scrollTop, clientHeight, scrollHeight } = scrollContainer;
+
+    //         if (scrollTop + clientHeight >= scrollHeight - 50) {
+    //             // Load more items when the user is near the bottom
+    //             loadMoreUsers();
+    //         }
+    //     }
+    // }
+
 
     function mountScroll() {
         const scrollContainer = document.getElementById("vu-data");
@@ -389,13 +449,13 @@ function ViewUsers(props) {
                         <input id="mg-search-usr" placeholder="..." onInput={e => searchUsers(e.target.value)}/>
                     </div>
                     <For each={users()}>
-                        {user => (
+                        {user => { console.log(user); return (
                             <div class="ui-bg-gray5">
                                 <button onClick={() => selectUser(user)}>
                                     {user.username}
                                 </button>
                             </div>
-                        )}
+                        );}}
                     </For>
                 </div>
                 <div class="ui-scroller-content center">

@@ -16,4 +16,6 @@ export class Permission {
 
     @OneToMany(() => RolePermission, rolePermission => rolePermission.permission)
         rolePermissions: RolePermission[];
+
+    // TODO: Add createdAt and updatedAt columns
 }

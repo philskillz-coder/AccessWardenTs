@@ -21,6 +21,7 @@ export const Navbar = props => {
         });
     }
 
+    // TODO: scroll data div overflow (text) hidden
     return (
         <nav classList={{
             "navbar navbar-expand-lg ui-bg-gray5 p-2": true,
@@ -33,6 +34,8 @@ export const Navbar = props => {
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <Show when={store().user()}>
+                        <li class="nav-item"><A class="nav-link" href="/v-users">Users</A></li>
+                        <li class="nav-item"><A class="nav-link" href="/v-perms">Permissions</A></li>
                         <li class="nav-item"><A class="nav-link" href="/dashboard">Dashboard</A></li>
                         <li class="nav-item"><A class="nav-link" href="/account">Account</A></li>
                         <li class="nav-item"><a class="nav-link" role="button" onClick={logout}>Logout</a></li>

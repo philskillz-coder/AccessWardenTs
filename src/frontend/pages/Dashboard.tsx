@@ -23,6 +23,9 @@ const Dashboard = props => {
                         <A href="/v-users" class="bg-danger">View Users</A>
                     </div>
                     <div class="action border">
+                        <A href="/v-perms" class="bg-danger">View Permissions</A>
+                    </div>
+                    <div class="action border">
                         <button type="button" class="bg-danger" onClick={logout}>Log out</button>
                     </div>
                 </div>

@@ -1,4 +1,4 @@
-import { CleanUser } from "@typings";
+import { CleanPermission,CleanUser } from "@typings";
 import hashidService from "backend/services/HashidService";
 import { getUserPermissions } from "backend/services/PermissionsService";
 
@@ -34,6 +34,14 @@ export async function serializeUserWithPerms(user: User): Promise<CleanUser> {
     };
 }
 
+export function serializePermission(permission: Permission): CleanPermission {
+    return {
+        id: hashidService.permissions.encode(permission.id),
+        name: permission.name,
+        // createdAt: permission.createdAt.toISOString(),
+        // updatedAt: permission.updatedAt.toISOString()
+    };
+}
 
 export function serializePermissionHard(permission: Permission): string {
     return permission.name;
