@@ -56,7 +56,7 @@ function ViewUsers(props) {
                 return;
             }
 
-            if (res.data.users.length === 0) {
+            if (res.data.users.length < count) {
                 setUsersEndReached(true);
             }
 
@@ -65,7 +65,6 @@ function ViewUsers(props) {
             } else {
                 setUsers([...users(), ...res.data.users || []]);
             }
-            console.log(users());
 
             if (res.data.users.length > 0) {
                 setSelectedUser(res.data.users[0]);
@@ -85,7 +84,7 @@ function ViewUsers(props) {
                     return;
                 }
 
-                if (res.data.users.length === 0) {
+                if (res.data.users.length < count) {
                     setUsersEndReached(true);
                 }
 
@@ -98,7 +97,6 @@ function ViewUsers(props) {
         }
     }
 
-    // eslint-disable-next-line no-unused-vars
     function searchUsers(text: string) {
         setSearch(text);
         if (searchTimeout) {
@@ -276,8 +274,6 @@ function ViewUsers(props) {
     }
 
     // TODO: Account.tsx and here: cancel button in modals
-    // FIXME: fix multiple requests when scrolling
-
     function loadMoreUsers() {
         if (usersEndReached() || usersLoading()) {
             return;
@@ -310,31 +306,17 @@ function ViewUsers(props) {
             // Check vertical scrolling
                 if (scrollTop + clientHeight >= scrollHeight - 50) {
                 // Load more items when the user is near the bottom
-                    console.log("near bottom");
                     loadMoreUsers();
                 }
             } else {
             // Check horizontal scrolling
                 if (clientWidth + scrollContainer.scrollLeft >= scrollWidth - 50) {
                 // Load more items when the user is near the right edge
-                    console.log("near right edge");
                     loadMoreUsers();
                 }
             }
         }
     }
-
-    // function handleScroll() {
-    //     const scrollContainer = document.getElementById("vu-data");
-    //     if (scrollContainer) {
-    //         const { scrollTop, clientHeight, scrollHeight } = scrollContainer;
-
-    //         if (scrollTop + clientHeight >= scrollHeight - 50) {
-    //             // Load more items when the user is near the bottom
-    //             loadMoreUsers();
-    //         }
-    //     }
-    // }
 
 
     function mountScroll() {
@@ -444,19 +426,22 @@ function ViewUsers(props) {
 
             <div class="ui-scroller-menu">
                 <div id="vu-data" class="ui-scroller">
-                    <div class="pinned">
+                    <div class="data-pin">
                         <label for="mg-search-usr">Search</label>
                         <input id="mg-search-usr" placeholder="..." onInput={e => searchUsers(e.target.value)}/>
                     </div>
-                    <For each={users()}>
-                        {user => { console.log(user); return (
-                            <div class="ui-bg-gray5">
-                                <button onClick={() => selectUser(user)}>
-                                    {user.username}
-                                </button>
-                            </div>
-                        );}}
-                    </For>
+                    <hr/>
+                    <div class="data-scroll">
+                        <For each={users()}>
+                            {user => { console.log(user); return (
+                                <div class="ui-bg-gray5">
+                                    <button onClick={() => selectUser(user)}>
+                                        {user.username}
+                                    </button>
+                                </div>
+                            );}}
+                        </For>
+                    </div>
                 </div>
                 <div class="ui-scroller-content center">
                     <Show when={selectedUser()}>

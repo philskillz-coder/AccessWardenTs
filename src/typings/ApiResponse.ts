@@ -5,6 +5,7 @@ export enum ApiResponseFlags {
     mfa_invalid = "mfainv",
     unauthorized = "unauthorized",
     unauthorized_mfa_req = "unauthorized_mfa_req",
+    unauthorized_mfa_fb = "unauthorized_mfa_fb",
     forbidden = "forbidden",
     role_mfa_required = "role_mfa_required",
     end_reached = "end_reached"

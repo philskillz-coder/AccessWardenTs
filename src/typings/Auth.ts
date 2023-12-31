@@ -17,3 +17,10 @@ export interface CleanPermission {
     // createdAt: string;
     // updatedAt: string;
 }
+
+export interface CleanRole {
+    id: string;
+    name: string;
+    // createdAt: string;
+    // updatedAt: string;
+}

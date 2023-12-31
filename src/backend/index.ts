@@ -11,7 +11,7 @@ import path from "path";
 import { createClient } from "redis";
 import { promisify } from "util";
 
-import ApiRouter from "./api-router";
+import ApiRouter from "./api/api-router";
 import assetsRouter from "./assets-router";
 import { AppDataSource } from "./database/data-source";
 import { Permission } from "./database/entity";

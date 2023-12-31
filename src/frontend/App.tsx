@@ -9,6 +9,7 @@ import Landing from "@pages/Landing";
 import Login from "@pages/Login";
 import Register from "@pages/Register";
 import ViewPermissions from "@pages/ViewPermissions";
+import ViewRoles from "@pages/ViewRoles";
 import ViewUsers from "@pages/ViewUsers";
 import { Route, Routes, useNavigate } from "@solidjs/router";
 import { ApiResponseFlags } from "@typings";
@@ -81,12 +82,6 @@ const App: Component = () => {
         await api.supplyMfaToken(mfa());
     };
 
-    // return (
-    //     <div>
-
-    //     </div>
-    // );
-
     return (
         <>
             <Navbar store={store}/>
@@ -98,6 +93,7 @@ const App: Component = () => {
                     <Route path="/login" element={<Login store={store} />}/>
                     <Route path="/register" element={<Register store={store} />}/>
                     <Route path="/v-users" element={<ViewUsers store={store} />}/>
+                    <Route path="/v-roles" element={<ViewRoles store={store} />}/>
                     <Route path="/v-perms" element={<ViewPermissions store={store} />}/>
                 </Routes>
                 <Modal

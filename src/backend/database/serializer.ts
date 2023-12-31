@@ -1,8 +1,8 @@
-import { CleanPermission,CleanUser } from "@typings";
+import { CleanPermission,CleanRole,CleanUser } from "@typings";
 import hashidService from "backend/services/HashidService";
 import { getUserPermissions } from "backend/services/PermissionsService";
 
-import { Permission, User } from "./entity";
+import { Permission, Role, User } from "./entity";
 
 export function serializeUser(user: User): CleanUser {
     return {
@@ -45,4 +45,11 @@ export function serializePermission(permission: Permission): CleanPermission {
 
 export function serializePermissionHard(permission: Permission): string {
     return permission.name;
+}
+
+export function serializeRole(role: Role): CleanRole {
+    return {
+        id: hashidService.roles.encode(role.id),
+        name: role.name,
+    };
 }

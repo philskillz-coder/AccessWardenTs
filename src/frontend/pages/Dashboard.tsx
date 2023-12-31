@@ -8,7 +8,17 @@ const Dashboard = props => {
 
     const navigate = useNavigate();
     async function logout() {
-        await api.post("/api/auth/logout", {}, async () => {
+        if (!store().user()) {
+            navigate("/");
+            return;
+        }
+
+        await api.post("/api/auth/logout", {}, async res => {
+            if (res.hasError()) {
+                console.error(res.message);
+                return;
+            }
+
             store().setUser(null);
             navigate("/");
         });
@@ -20,10 +30,13 @@ const Dashboard = props => {
                 <h1>Welcome back {store().user()?.email}</h1>
                 <div class="actions">
                     <div class="action border">
-                        <A href="/v-users" class="bg-danger">View Users</A>
+                        <A href="/v-users" class="bg-info">View Users</A>
                     </div>
                     <div class="action border">
-                        <A href="/v-perms" class="bg-danger">View Permissions</A>
+                        <A href="/v-roles" class="bg-info">View Roles</A>
+                    </div>
+                    <div class="action border">
+                        <A href="/v-perms" class="bg-info">View Permissions</A>
                     </div>
                     <div class="action border">
                         <button type="button" class="bg-danger" onClick={logout}>Log out</button>

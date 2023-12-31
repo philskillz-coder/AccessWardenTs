@@ -227,7 +227,6 @@ $CREATE_BUTTON_COLOR: #678EFE;
 }
 
 input {
-    // z-index: 1;
     display: block;
     position: relative;
     flex: 1 1 auto;
@@ -272,89 +271,121 @@ label {
 }
 
 .ui-scroller {
+    height: 100%;
     border: 2px solid var(--gray2);
     border-radius: 5px;
     padding: 5px;
+    box-sizing: border-box;    
+    white-space: nowrap;
+    display: flex;
+    flex-direction: column;
+    
+    @media screen and (max-width: 1200px) { // default
+        width: 100%; // default
+        height: max-content;
+    }
 
-    &>div {
-        display: flex;
-        align-items: center;
-        justify-content: center; /* Horizontally center the content in case of multi-line content */
-        text-align: center; /* Horizontally center the content */
+    @media screen and (min-width: 1200px) { // default
+        width: 300px; // default
+        height: 100%;
+    }
 
-        &>button {
-            height: 100%;
-            width: 100%;
+
+    >hr {
+        margin-top: 2px;
+        margin-bottom: 5px;
+    }
+
+    &>.data-pin, &>.data-scroll {
+        &>div {
+            display: flex;
+            align-items: center;
+            justify-content: center; /* Horizontally center the content in case of multi-line content */
+            text-align: center; /* Horizontally center the content */
+            height: 50px;
             border-radius: 5px;
-            border: none;
-            background: none;
-            color: var(--text);
-            font-size: 16px;
-            font-weight: 500;
-            transition: background-color .3s ease, color .3s ease;
+            overflow: hidden;
 
-            &:not(:disabled) {
-                &:hover {
-                    cursor: pointer;
-                    background-color: var(--gray3);
+            &>button {
+                height: 100%;
+                width: 100%;
+                border-radius: 5px;
+                border: none;
+                background: none;
+                color: var(--text);
+                font-size: 16px;
+                font-weight: 500;
+                transition: background-color .3s ease, color .3s ease;
+    
+                &:not(:disabled) {
+                    &:hover {
+                        cursor: pointer;
+                        background-color: var(--gray3);
+                    }
                 }
             }
         }
     }
 
-    @media screen and (max-width: 1200px) {
-        overflow-x: auto;
-        white-space: nowrap;
+    &>.data-pin {
+        height: max-content;
+        display: flex;
+        flex-direction: column;
+        width: 100%;
 
-        &>.pinned {
-            height: max-content;
-            display: flex;
-            flex-direction: column;
-            margin: 0;
-            margin-bottom: 10px;
-            width: 100%;
+        &:not(:only-child) {
+            margin-bottom: 5px;
         }
 
         &>div {
-            display: inline-block;
-            height: 50px;
-            width: 150px;
-            border-radius: 5px;
-
             &:not(:last-child) {
-                margin-right: 5px;
+                margin-bottom: 5px;
+            }
+        }
+    }
+
+    &>.data-scroll {
+        &>.selected {
+            border: 1px solid var(--gray2);
+        }
+    }
+
+    @media screen and (max-width: 1200px) {
+        &>.data-scroll {
+            overflow-x: auto;
+            white-space: nowrap;
+    
+            &>div {
+                display: inline-block;
+                width: 150px;
+    
+                &:not(:last-child) {
+                    margin-right: 5px;
+                }
             }
         }
     }
 
     @media screen and (min-width: 1200px) {
-        box-sizing: border-box;
-        overflow-y: auto;
-        white-space: nowrap;
-        width: 300px;
-        height: 100%;
-
-        &>.pinned {
-            height: max-content;
-            display: flex;
-            flex-direction: column;
-            margin: 0;
-            width: 100%;
-            position: sticky;
-        }
-
-        &::-webkit-scrollbar {
-            display: none;
-        }
-
-        & > div {
+        &>.data-scroll {
             box-sizing: border-box;
-            height: 50px;
+            flex: 1;
+            overflow-y: auto;
+            white-space: nowrap;
             width: 100%;
-            border-radius: 5px;
+            height: 100%;
 
-            &:not(:first-child) {
-                margin-top: 5px;
+            &::-webkit-scrollbar {
+                display: none;
+            }
+
+            & > div {
+                box-sizing: border-box;
+                width: 100%;
+
+                &:not(:first-child) {
+                    margin-top: 5px;
+                }
             }
         }
     }
@@ -384,14 +415,16 @@ label {
     @media screen and (max-width: 1200px) {
         display: flex;
         flex-direction: column;
+        width: 100%;
+        height: 100%;
 
         &>.ui-scroller-content {
             margin-top: 5px;
-            height: 100%;
+            height: max-content;
         }
     }
+
     @media screen and (min-width: 1200px) {
-        box-sizing: border-box;
         display: flex;
         flex-direction: row;
         height: 100%;
