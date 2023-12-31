@@ -1,4 +1,4 @@
-import { CleanPermission,CleanRole,CleanUser } from "@typings";
+import { CleanPermission, CleanRole, CleanUser } from "@typings";
 import hashidService from "backend/services/HashidService";
 import { getUserPermissions } from "backend/services/PermissionsService";
 

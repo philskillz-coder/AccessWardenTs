@@ -37,13 +37,13 @@ export class User {
     @Column({default: ""})
         loginSession: string = "";
 
-    @CreateDateColumn()
-        createdAt: Date; // Creation date
-
-    @UpdateDateColumn()
-        updatedAt: Date; // Last updated date
-
     @ManyToMany(() => Role)
     @JoinTable()
         roles: Role[];
+
+    @CreateDateColumn()
+        createdAt: Date;
+
+    @UpdateDateColumn()
+        updatedAt: Date;
 }

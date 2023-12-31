@@ -1,5 +1,5 @@
 // rolePermission.ts
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 
 import { Permission } from "./Permission";
 import { Role } from "./Role";
@@ -17,4 +17,7 @@ export class RolePermission {
 
     @Column()
         hasPermission: boolean;
+
+    @CreateDateColumn()
+        createdAt: Date;
 }

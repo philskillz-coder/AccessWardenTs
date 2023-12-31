@@ -140,7 +140,6 @@ function ViewPermissions(props) {
 
     function updateName() {
         api.post("/api/mg/permissions/up-name", { permissionId: selectedPermission().id, name: newName() }, async res => {
-            // TODO: check if name is available (tag in resp) if not set error inline or notif
             if (res.hasError()) {
                 notificationService.show({
                     status: "danger",
@@ -190,7 +189,6 @@ function ViewPermissions(props) {
         });
     }
 
-    // TODO: Account.tsx and here: cancel button in modals
     function loadMorePermissions() {
         if (permissionsEndReached() || permissionsLoading()) {
             return;
@@ -270,17 +268,18 @@ function ViewPermissions(props) {
         setSelectedPermission(perm);
     }
 
+    // TODO: ViewUsers.tsx, ViewRoles.tsx, ViewPermissions.tsx: fix selecting item when loading more
     return (
         <ShowIfPermission hasPermission={hasPagePermission}>
 
             <div class="ui-scroller-menu">
-                <div id="vu-data" class="ui-scroller">
+                <div class="ui-scroller">
                     <div class="data-pin">
                         <label for="mg-search-usr">Search</label>
                         <input id="mg-search-usr" placeholder="..." onInput={e => searchPermissions(e.target.value)}/>
                     </div>
                     <hr/>
-                    <div class="data-scroll">
+                    <div id="vu-data" class="data-scroll">
                         <For each={permissions()}>
                             {permission => (
                                 <div class="ui-bg-gray5">
@@ -302,9 +301,9 @@ function ViewPermissions(props) {
                                     <button classList={{"active": showRoles()}} onClick={toggleInfo} disabled={showRoles()}>Roles</button>
                                 </div>
                                 <Show when={showInfo()}>
-                                    <label for="mg-acc-name">Name</label>
+                                    <label for="mg-perm-name">Name</label>
                                     <div class="action border">
-                                        <input id="mg-acc-name" placeholder={selectedPermission().name} disabled/>
+                                        <input id="mg-perm-name" placeholder={selectedPermission().name} disabled/>
                                         <button
                                             type="button"
                                             class="bg-info ui-icon w-20"
@@ -314,7 +313,7 @@ function ViewPermissions(props) {
                                         >
                                             <div><BiSolidPencil size={15} color="#ffffff"/></div>
                                         </button>
-                                        <Modal opened={editingName()} onClose={closeNameEditor} initialFocus="#mg-new-name">
+                                        <Modal opened={editingName()} onClose={closeNameEditor} initialFocus="#mg-perm-new-name">
                                             <ModalOverlay />
                                             <ModalContent>
                                                 <ModalCloseButton />
@@ -322,11 +321,12 @@ function ViewPermissions(props) {
                                                 <ModalBody>
                                                     <FormControl mb="$4">
                                                         <FormLabel>Name</FormLabel>
-                                                        <Input id="mg-new-name" type="text" placeholder="Enter new name" autocomplete="off" spellcheck={false} onChange={e => setNewName(e.target.value)}/>
+                                                        <Input id="mg-perm-new-name" type="text" placeholder="Enter new name" autocomplete="off" spellcheck={false} onChange={e => setNewName(e.target.value)}/>
                                                     </FormControl>
                                                 </ModalBody>
                                                 <ModalFooter>
                                                     <Button onClick={updateName}>Update</Button>
+                                                    <Button id="mg-perm-new-name-cancel" onClick={closeNameEditor} ms="auto" colorScheme={"primary"}>Cancel</Button>
                                                 </ModalFooter>
                                             </ModalContent>
                                         </Modal>

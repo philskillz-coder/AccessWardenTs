@@ -110,7 +110,6 @@ const Account = props => {
 
     function updateUsername() {
         api.post("/api/user/update/username", { username: newUsername() }, async res => {
-            // TODO: check if username is available (tag in resp) if not set error inline or notif
             if (res.hasError()) {
                 notificationService.show({
                     status: "danger",
@@ -173,6 +172,7 @@ const Account = props => {
                             </ModalBody>
                             <ModalFooter>
                                 <Button onClick={updateEmail}>Update</Button>
+                                <Button id="acc-new-mail-cancel" onClick={closeEmailEditor} ms="auto" colorScheme={"primary"}>Cancel</Button>
                             </ModalFooter>
                         </ModalContent>
                     </Modal>
@@ -192,11 +192,12 @@ const Account = props => {
                             <ModalBody>
                                 <FormControl mb="$4">
                                     <FormLabel>Username</FormLabel>
-                                    <Input id="new-username" type="text" placeholder="Enter new username" autocomplete="off" spellcheck={false} onChange={e => setNewUsername(e.target.value)}/>
+                                    <Input id="acc-new-username" type="text" placeholder="Enter new username" autocomplete="off" spellcheck={false} onChange={e => setNewUsername(e.target.value)}/>
                                 </FormControl>
                             </ModalBody>
                             <ModalFooter>
                                 <Button onClick={updateUsername}>Update</Button>
+                                <Button id="acc-new-username-cancel" onClick={closeUsernameEditor} ms="auto" colorScheme={"primary"}>Cancel</Button>
                             </ModalFooter>
                         </ModalContent>
                     </Modal>
@@ -225,6 +226,7 @@ const Account = props => {
                             </ModalBody>
                             <ModalFooter>
                                 <Button onClick={updatePassword}>Update</Button>
+                                <Button id="acc-new-password-cancel" onClick={closePasswordEditor} ms="auto" colorScheme={"primary"}>Cancel</Button>
                             </ModalFooter>
                         </ModalContent>
                     </Modal>
@@ -240,7 +242,7 @@ const Account = props => {
                     </Show>
                     <Show when={store().user().mfaEnabled === false}>
                         <button type="button" class="bg-success" onClick={setupMfa}>Enable 2FA</button>
-                        <Modal opened={editingMfa()} onClose={closeMfaEditor} initialFocus="#mfa-code-validation">
+                        <Modal opened={editingMfa()} onClose={closeMfaEditor} initialFocus="#acc-mfa-code-validation">
                             <ModalOverlay />
                             <ModalContent>
                                 <ModalCloseButton />
@@ -252,11 +254,12 @@ const Account = props => {
 
                                     <FormControl  mb="$4">
                                         <FormLabel>2FA Code</FormLabel>
-                                        <Input id="mfa-code-validation" placeholder="Verify your 2FA code" onChange={e => setMfaCode(e.target.value)}/>
+                                        <Input id="acc-mfa-code-validation" placeholder="Verify your 2FA code" onChange={e => setMfaCode(e.target.value)}/>
                                     </FormControl>
                                 </ModalBody>
                                 <ModalFooter>
                                     <Button onClick={verifyMfa}>Verify</Button>
+                                    <Button id="acc-mfa-setup-cancel" onClick={closeMfaEditor} ms="auto" colorScheme={"primary"}>Cancel</Button>
                                 </ModalFooter>
                             </ModalContent>
                         </Modal>

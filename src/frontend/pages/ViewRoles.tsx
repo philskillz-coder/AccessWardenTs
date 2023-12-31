@@ -141,7 +141,6 @@ function ViewRoles(props) {
 
     function updateRole() {
         api.post("/api/mg/roles/up-name", { roleId: selectedRole().id, name: newName() }, async res => {
-            // TODO: check if username is available (tag in resp) if not set error inline or notif
             if (res.hasError()) {
                 notificationService.show({
                     status: "danger",
@@ -191,7 +190,6 @@ function ViewRoles(props) {
         });
     }
 
-    // TODO: Account.tsx and here: cancel button in modals
     function loadMoreRoles() {
         if (rolesEndReached() || rolesLoading()) {
             return;
@@ -342,13 +340,13 @@ function ViewRoles(props) {
     return (
         <ShowIfPermission hasPermission={hasPagePermission}>
             <div class="ui-scroller-menu">
-                <div id="vu-data" class="ui-scroller">
+                <div class="ui-scroller">
                     <div class="data-pin">
                         <label for="mg-search-usr">Search</label>
                         <input id="mg-search-usr" placeholder="..." onInput={e => searchRoles(e.target.value)}/>
                     </div>
                     <hr/>
-                    <div class="data-scroll">
+                    <div id="vu-data" class="data-scroll">
                         <For each={roles()}>
                             {role => (
                                 <div class="ui-bg-gray5">
@@ -395,6 +393,7 @@ function ViewRoles(props) {
                                                 </ModalBody>
                                                 <ModalFooter>
                                                     <Button onClick={updateRole}>Update</Button>
+                                                    <Button id="mg-roles-new-name-cancel" onClick={closeNameEditor} ms="auto" colorScheme={"primary"}>Cancel</Button>
                                                 </ModalFooter>
                                             </ModalContent>
                                         </Modal>

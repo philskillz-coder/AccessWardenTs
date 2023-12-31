@@ -33,6 +33,7 @@ function ViewUsers(props) {
     const [editingPassword, setEditingPassword] = createSignal(false);
     const [newPassword, setNewPassword] = createSignal<string | null>(null);
 
+    const [loginAsUserCR, setLoginAsUserCR] = createSignal(false);
     const [deleteUserCR, setDeleteUserCR] = createSignal(false);
 
     const [hasPagePermission, setHasPagePermission] = createSignal<boolean | null>(null);
@@ -181,7 +182,6 @@ function ViewUsers(props) {
     // TODO: reset user cache on login
     function updateUsername() {
         api.post("/api/mg/users/up-username", { userId: selectedUser().id, username: newUsername() }, async res => {
-            // TODO: check if username is available (tag in resp) if not set error inline or notif
             if (res.hasError()) {
                 notificationService.show({
                     status: "danger",
@@ -273,7 +273,6 @@ function ViewUsers(props) {
         );
     }
 
-    // TODO: Account.tsx and here: cancel button in modals
     function loadMoreUsers() {
         if (usersEndReached() || usersLoading()) {
             return;
@@ -425,21 +424,21 @@ function ViewUsers(props) {
         <ShowIfPermission hasPermission={hasPagePermission}>
 
             <div class="ui-scroller-menu">
-                <div id="vu-data" class="ui-scroller">
+                <div class="ui-scroller">
                     <div class="data-pin">
                         <label for="mg-search-usr">Search</label>
                         <input id="mg-search-usr" placeholder="..." onInput={e => searchUsers(e.target.value)}/>
                     </div>
                     <hr/>
-                    <div class="data-scroll">
+                    <div id="vu-data" class="data-scroll">
                         <For each={users()}>
-                            {user => { console.log(user); return (
+                            {user => (
                                 <div class="ui-bg-gray5">
                                     <button onClick={() => selectUser(user)}>
                                         {user.username}
                                     </button>
                                 </div>
-                            );}}
+                            )}
                         </For>
                     </div>
                 </div>
@@ -453,9 +452,9 @@ function ViewUsers(props) {
                                     <button classList={{"active": showRoles()}} onClick={toggleInfo} disabled={showRoles()}>Roles</button>
                                 </div>
                                 <Show when={showInfo()}>
-                                    <label for="mg-acc-mail">Email</label>
+                                    <label for="mg-user-mail">Email</label>
                                     <div class="action border">
-                                        <input id="mg-acc-mail" placeholder={selectedUser().email} disabled/>
+                                        <input id="mg-user-mail" placeholder={selectedUser().email} disabled/>
                                         <button
                                             type="button"
                                             class="bg-info ui-icon w-20"
@@ -465,7 +464,7 @@ function ViewUsers(props) {
                                         >
                                             <div><BiSolidPencil size={15} color="#ffffff"/></div>
                                         </button>
-                                        <Modal opened={editingEmail()} onClose={closeEmailEditor} initialFocus="#mg-new-mail">
+                                        <Modal opened={editingEmail()} onClose={closeEmailEditor} initialFocus="#mg-user-new-mail">
                                             <ModalOverlay />
                                             <ModalContent>
                                                 <ModalCloseButton />
@@ -473,18 +472,19 @@ function ViewUsers(props) {
                                                 <ModalBody>
                                                     <FormControl mb="$4">
                                                         <FormLabel>Email Address</FormLabel>
-                                                        <Input id="mg-new-mail" type="mail" placeholder="Enter new email address" autocomplete="off" spellcheck={false} onChange={e => setNewEmail(e.target.value)}/>
+                                                        <Input id="mg-user-new-mail" type="mail" placeholder="Enter new email address" autocomplete="off" spellcheck={false} onChange={e => setNewEmail(e.target.value)}/>
                                                     </FormControl>
                                                 </ModalBody>
                                                 <ModalFooter>
                                                     <Button onClick={updateEmail}>Update</Button>
+                                                    <Button id="mg-user-new-mail-cancel" onClick={closeEmailEditor} ms="auto" colorScheme={"primary"}>Cancel</Button>
                                                 </ModalFooter>
                                             </ModalContent>
                                         </Modal>
                                     </div>
-                                    <label for="mg-acc-username">Username</label>
+                                    <label for="mg-user-username">Username</label>
                                     <div class="action border">
-                                        <input id="mg-acc-username" placeholder={selectedUser().username} disabled/>
+                                        <input id="mg-user-username" placeholder={selectedUser().username} disabled/>
                                         <button
                                             type="button"
                                             class="bg-info ui-icon w-20"
@@ -494,7 +494,7 @@ function ViewUsers(props) {
                                         >
                                             <div><BiSolidPencil size={15} color="#ffffff"/></div>
                                         </button>
-                                        <Modal opened={editingUsername()} onClose={closeUsernameEditor} initialFocus="#mg-new-username">
+                                        <Modal opened={editingUsername()} onClose={closeUsernameEditor} initialFocus="#mg-user-new-username">
                                             <ModalOverlay />
                                             <ModalContent>
                                                 <ModalCloseButton />
@@ -502,18 +502,19 @@ function ViewUsers(props) {
                                                 <ModalBody>
                                                     <FormControl mb="$4">
                                                         <FormLabel>Username</FormLabel>
-                                                        <Input id="mg-new-username" type="text" placeholder="Enter new username" autocomplete="off" spellcheck={false} onChange={e => setNewUsername(e.target.value)}/>
+                                                        <Input id="mg-user-new-username" type="text" placeholder="Enter new username" autocomplete="off" spellcheck={false} onChange={e => setNewUsername(e.target.value)}/>
                                                     </FormControl>
                                                 </ModalBody>
                                                 <ModalFooter>
                                                     <Button onClick={updateUsername}>Update</Button>
+                                                    <Button id="mg-user-new-username-cancel" onClick={closeUsernameEditor} ms="auto" colorScheme={"primary"}>Cancel</Button>
                                                 </ModalFooter>
                                             </ModalContent>
                                         </Modal>
                                     </div>
-                                    <label for="mg-acc-password">Password</label>
+                                    <label for="mg-user-password">Password</label>
                                     <div class="action border">
-                                        <input id="mg-acc-password" placeholder="********" disabled/>
+                                        <input id="mg-user-password" placeholder="********" disabled/>
                                         <button
                                             type="button"
                                             class="bg-info ui-icon w-20"
@@ -523,7 +524,7 @@ function ViewUsers(props) {
                                         >
                                             <div><BiSolidPencil size={15} color="#ffffff"/></div>
                                         </button>
-                                        <Modal opened={editingPassword()} onClose={closePasswordEditor} initialFocus="#mg-new-password">
+                                        <Modal opened={editingPassword()} onClose={closePasswordEditor} initialFocus="#mg-user-new-password">
                                             <ModalOverlay />
                                             <ModalContent>
                                                 <ModalCloseButton />
@@ -531,11 +532,12 @@ function ViewUsers(props) {
                                                 <ModalBody>
                                                     <FormControl mb="$4">
                                                         <FormLabel>New Password</FormLabel>
-                                                        <Input id="mg-new-password" type="password" placeholder="Enter new password" autocomplete="new-password" spellcheck={false} onChange={e => setNewPassword(e.target.value)}/>
+                                                        <Input id="mg-user-new-password" type="password" placeholder="Enter new password" autocomplete="new-password" spellcheck={false} onChange={e => setNewPassword(e.target.value)}/>
                                                     </FormControl>
                                                 </ModalBody>
                                                 <ModalFooter>
                                                     <Button onClick={updatePassword}>Update</Button>
+                                                    <Button id="mg-user-new-password-cancel" onClick={closePasswordEditor} ms="auto" colorScheme={"primary"}>Cancel</Button>
                                                 </ModalFooter>
                                             </ModalContent>
                                         </Modal>
@@ -545,10 +547,13 @@ function ViewUsers(props) {
                                             type="button"
                                             title={!hasPermission("Admin.LoginAsUser") ? "You don't have the permission to do that!" : ""}
                                             disabled={!hasPermission("Admin.LoginAs")}
-                                            onClick={() => loginAsUser()}
+                                            onClick={() => setLoginAsUserCR(true)}
                                         >
                                             Login as user
                                         </button>
+                                        <ModalConfirmation isOpen={loginAsUserCR} onCancel={() => setLoginAsUserCR(false)} onConfirm={loginAsUser} title="Confirmation required">
+                                            <p>Login as {selectedUser().username}?</p>
+                                        </ModalConfirmation>
                                     </div>
                                     <div class="action bg-danger">
                                         <button

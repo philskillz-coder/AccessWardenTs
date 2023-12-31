@@ -89,6 +89,48 @@ export function targetUserValid(req: CRequest, res, next) {
     next();
 }
 
+export function targetRoleValid(req: CRequest, res, next) {
+    if (!req.body.roleId) {
+        res.status(400).json({
+            status: "error",
+            message: "Missing Data"
+        });
+        return;
+    }
+
+    const roleId = hashidService.roles.decodeSingle(req.body.roleId);
+    if (!roleId) {
+        res.status(400).json({
+            status: "error",
+            message: "Invalid Role format"
+        });
+        return;
+    }
+
+    next();
+}
+
+export function targetPermissionValid(req: CRequest, res, next) {
+    if (!req.body.permissionId) {
+        res.status(400).json({
+            status: "error",
+            message: "Missing Data"
+        });
+        return;
+    }
+
+    const permissionId = hashidService.permissions.decodeSingle(req.body.permissionId);
+    if (!permissionId) {
+        res.status(400).json({
+            status: "error",
+            message: "Invalid Permission format"
+        });
+        return;
+    }
+
+    next();
+}
+
 export function targetUserNotAdmin(req: CRequest, res, next) {
     if (!req.body.userId) {
         res.status(400).json({
@@ -128,8 +170,8 @@ export function targetUserNotAdmin(req: CRequest, res, next) {
     });
 }
 
-export function parseNumber(number: string | null, def?: number): number | null {
-    if (!number) {
+export function parseNumber(number: string | null | undefined, def?: number): number | null {
+    if (number === null || number === undefined) {
         return null || def;
     }
 

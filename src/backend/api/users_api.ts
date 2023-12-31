@@ -1,5 +1,6 @@
 import Hashing from "@shared/Hashing";
 import logger from "@shared/Logger";
+import { isValidEmail } from "@shared/Mail";
 import { AppDataSource } from "backend/database/data-source";
 import { Role, User } from "backend/database/entity";
 import { PagePermissions } from "backend/database/required-data";
@@ -180,7 +181,7 @@ UsersRouter.post("/mg/users/up-username", ensureAuthenticated, requirePermission
         return;
     }
 
-    // TODO: username rules like password rules check
+    // no username validation because the admin can set any username
     const exists = await AppDataSource.getRepository(User).exist({
         where: {
             username: req.body.username
@@ -228,7 +229,13 @@ UsersRouter.post("/mg/users/up-email", ensureAuthenticated, requirePermissions(
         return;
     }
 
-    // TODO: email rules check
+    if (!isValidEmail(req.body.email)) {
+        res.status(400).json({
+            status: "error",
+            message: "Invalid Email"
+        });
+        return;
+    }
     const exists = await AppDataSource.getRepository(User).exist({
         where: {
             email: req.body.email
@@ -314,6 +321,12 @@ UsersRouter.post("/mg/users/up-roles", ensureAuthenticated, requirePermissions(
         },
         relations: ["roles"]
     });
+    const requester = await AppDataSource.getRepository(User).findOne({
+        where: {
+            id: (<User>req.user).id
+        },
+        relations: ["roles"]
+    });
 
     if (!user) {
         res.status(400).json({
@@ -332,12 +345,12 @@ UsersRouter.post("/mg/users/up-roles", ensureAuthenticated, requirePermissions(
     const newRoles = [];
 
     // TODO: check if this works
-    const topPower = user.roles.length > 0 ? user.roles.sort((a, b) => a.power - b.power)[0].power : 0;
+    const requesterTopPower = Math.max(...requester.roles.map(role => role.power));
 
     allRoles.forEach(role => {
         const editedRole = editedRoles.find(r => r.id === role.id);
 
-        if (editedRole !== undefined && role.power <= topPower) { // if the role has fewer power than the users top role: allow
+        if (editedRole !== undefined && role.power < requesterTopPower) { // if the role has fewer power than the users top role: allow
             newRoles.push({...role, has: editedRole.has});
         } else {
             const _role = user.roles.find(r => r.id === role.id);
@@ -359,10 +372,21 @@ UsersRouter.post("/mg/users/delete", ensureAuthenticated, requirePermissions(
     PermNameComp, PagePermissions.AdminEditUserDelete
 ), targetUserNotAdmin, async (req: CRequest, res) => {
     const userId = hashidService.users.decodeSingle(req.body.userId);
+    const _req = <User>req.user;
+
+    if (userId === _req.id) {
+        res.status(400).json({
+            status: "error",
+            message: "You can not delete yourself"
+        });
+        return;
+    }
+
     const user = await AppDataSource.getRepository(User).findOne({
         where: {
             id: userId
-        }
+        },
+        relations: ["roles"]
     });
     if (!user) {
         res.status(400).json({
@@ -372,8 +396,24 @@ UsersRouter.post("/mg/users/delete", ensureAuthenticated, requirePermissions(
         return;
     }
 
-    // TODO: you can only delete users with a top role that has less power than your top role
-    // TODO: you can not delete yourself
+    const requester = await AppDataSource.getRepository(User).findOne({
+        where: {
+            id: _req.id
+        },
+        relations: ["roles"]
+    });
+
+
+    // you can only delete users with a top role that has less power than your top role
+    const requesterTopPower = Math.max(...requester.roles.map(role => role.power));
+    const userTopPower = Math.max(...user.roles.map(role => role.power));
+    if (requesterTopPower <= userTopPower) {
+        res.status(400).json({
+            status: "error",
+            message: "You can not delete this user"
+        });
+        return;
+    }
 
     await AppDataSource.getRepository(User).remove(user);
     res.json({

@@ -3,6 +3,7 @@ import { AppDataSource } from "backend/database/data-source";
 import { Permission, RolePermission, User } from "backend/database/entity";
 
 import cacheService from "./CacheService";
+import hashidService from "./HashidService";
 
 export async function getUserPermissions(userId: number): Promise<Permission[]> {
     try {
@@ -59,10 +60,22 @@ export async function getUserPermissions(userId: number): Promise<Permission[]> 
 export const PermNameComp = (p: Permission): string => {
     return p.name;
 };
+export const PermIdComp = (p: Permission): number => {
+    return p.id;
+};
+export const PerRIdComp = (p: RolePermission): string => {
+    return hashidService.roles.encode(p.role.id);
+};
 
 // eslint-disable-next-line no-unused-vars
 export async function hasPermissions<T>(userId: number, comp: (perm: Permission) => T, ...requiredPermissions: T[]): Promise<boolean> {
     const userPermissions = await getUserPermissions(userId);
+    const hasPermission = requiredPermissions.every(reqP => userPermissions.find(up => comp(up) === reqP));
+    return hasPermission;
+}
+
+// eslint-disable-next-line no-unused-vars
+export function hasPermissionsFrom<T>(userPermissions: Permission[], comp: (perm: Permission) => T, ...requiredPermissions: T[]): boolean {
     const hasPermission = requiredPermissions.every(reqP => userPermissions.find(up => comp(up) === reqP));
     return hasPermission;
 }

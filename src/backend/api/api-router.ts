@@ -1,25 +1,22 @@
 import Hashing from "@shared/Hashing";
 import logger from "@shared/Logger";
-import {isValidEmail} from "@shared/Mail";
-import {isPasswordValid, PASSWORD_RULES} from "@shared/Password";
-import {isUsernameValid} from "@shared/Username";
-import {ApiResponseFlags} from "@typings";
+import { isValidEmail } from "@shared/Mail";
+import { isPasswordValid, PASSWORD_RULES } from "@shared/Password";
+import { isUsernameValid } from "@shared/Username";
+import { ApiResponseFlags } from "@typings";
 import dotenv from "dotenv";
-import {Router} from "express";
+import { Router } from "express";
 import speakeasy from "speakeasy";
-import { Like } from "typeorm";
 
-import {AppDataSource} from "../database/data-source";
-import {Permission, User} from "../database/entity";
-import { PagePermissions } from "../database/required-data";
-import {serializePermission, serializePermissionHard, serializeUserWithPerms} from "../database/serializer";
-import {CRequest} from "../express";
-import hashidService from "../services/HashidService";
+import { AppDataSource } from "../database/data-source";
+import { User } from "../database/entity";
+import { serializeUserWithPerms } from "../database/serializer";
+import { CRequest } from "../express";
 import { PermNameComp } from "../services/PermissionsService";
 import temporaryValueService from "../services/TemporaryValueService";
 import PermissionsRouter from "./permissions_api";
 import RolesRouter from "./roles_api";
-import { ensureAuthenticated, ensureDevEnv, ensureMfaDisabled, ensureMfaEnabled, requirePermissions, targetUserNotAdmin, validateMfaToken } from "./tools";
+import { ensureAuthenticated, ensureDevEnv, ensureMfaDisabled, ensureMfaEnabled, requirePermissions, validateMfaToken } from "./tools";
 import UsersRouter from "./users_api";
 
 dotenv.config();
@@ -339,166 +336,6 @@ ApiRouter.post("/user/update/password", ensureAuthenticated, validateMfaToken, a
 // You can only update a user if
 // - You have the permission to update whatever
 // - The target user is not admin
-
-
-
-
-
-
-
-
-
-
-// TODO: new role, permssion, user endpoints + frontend
-// TODO: check if all endpoints work
-ApiRouter.post("/mg/permissions/get", ensureAuthenticated, requirePermissions(
-    PermNameComp, PagePermissions.AdminViewPermissions
-), async (req: CRequest, res) => {
-    const page = Number.parseInt(req.body.page) || 0;
-    const count = Number.parseInt(req.body.count) || 25;
-
-    const permissions = await AppDataSource.getRepository(Permission).find({
-        skip: page * count,
-        take: count,
-        order: {
-            id: "ASC"
-        }
-    });
-
-    res.json({
-        status: "success",
-        data: {
-            permissions: permissions.map(perm => serializePermission(perm))
-        }
-    });
-});
-
-ApiRouter.post("/mg/permissions/get-all-roles", ensureAuthenticated, requirePermissions(
-    PermNameComp, PagePermissions.AdminViewPermissions
-), async (req: CRequest, res) => {
-    const permissionId = Number(hashidService.permissions.decode(req.body.permissionId)[0]);
-    const permission = await AppDataSource.getRepository(Permission).findOne({
-        where: {
-            id: permissionId
-        },
-        relations: ["rolePermissions", "rolePermissions.role"]
-    });
-
-    if (!permission) {
-        res.status(400).json({
-            status: "error",
-            message: "Permission not found"
-        });
-        return;
-    }
-
-    res.json({
-        status: "success",
-        data: {
-            roles: permission.rolePermissions.map(rolePerm => ({
-                id: hashidService.roles.encode(rolePerm.role.id),
-                name: rolePerm.role.name,
-            }))
-        }
-    });
-});
-
-ApiRouter.post("/mg/permissions/search", ensureAuthenticated, requirePermissions(
-    PermNameComp, PagePermissions.AdminViewPermissions
-), async (req: CRequest, res) => {
-    const search = "%" + req.body.search + "%";
-    const page = Number.parseInt(req.body.page) || 0;
-    const count = Number.parseInt(req.body.count) || 25;
-
-    // TODO: case insensitive search
-    const permissions = await AppDataSource.getRepository(Permission).find({
-        where: [
-            {
-                name: Like(search)
-            }
-        ],
-        skip: page * count,
-        take: count,
-        order: {
-            name: "ASC"
-        }
-    });
-
-    res.json({
-        status: "success",
-        data: {
-            permissions: permissions.map(perm => serializePermissionHard(perm))
-        }
-    });
-});
-
-ApiRouter.post("/mg/permission/up-name",
-    ensureAuthenticated,
-    requirePermissions(
-        PermNameComp, PagePermissions.AdminEditPermissionName
-    ),
-    targetUserNotAdmin,
-    async (req: CRequest, res) => {
-        const exists = await AppDataSource.getRepository(Permission).exist({
-            where: {
-                name: req.body.name
-            }
-        });
-        if (exists) {
-            res.status(400).json({
-                status: "error",
-                message: "Name is already taken"
-            });
-            return;
-        }
-
-        const permissionId = Number(hashidService.permissions.decode(req.body.permissionId)[0]);
-        const permission = await AppDataSource.getRepository(Permission).findOne({
-            where: {
-                id: permissionId
-            }
-        });
-
-        if (!permission) {
-            res.status(400).json({
-                status: "error",
-                message: "Permission not found"
-            });
-            return;
-        }
-
-        permission.name = req.body.name;
-        await AppDataSource.getRepository(Permission).save(permission);
-        res.json({
-            status: "success",
-            message: "Name updated"
-        });
-    }
-);
-
-ApiRouter.post("/mg/permissions/delete", ensureAuthenticated, requirePermissions(
-    PermNameComp, PagePermissions.AdminEditPermissionDelete
-), targetUserNotAdmin, async (req: CRequest, res) => {
-    const permissionId = Number(hashidService.permissions.decode(req.body.permissionId)[0]);
-    const permission = await AppDataSource.getRepository(Permission).findOne({
-        where: {
-            id: permissionId
-        }
-    });
-    if (!permission) {
-        res.status(400).json({
-            status: "error",
-            message: "Permission not found"
-        });
-        return;
-    }
-
-    await AppDataSource.getRepository(Permission).remove(permission);
-    res.json({
-        status: "success",
-        message: "Permission deleted"
-    });
-});
 
 
 ApiRouter.post("/perm/test", ensureAuthenticated, requirePermissions(PermNameComp, "Test"), (req: CRequest, res) => {
