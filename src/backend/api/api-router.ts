@@ -10,9 +10,9 @@ import speakeasy from "speakeasy";
 
 import { AppDataSource } from "../database/data-source";
 import { User } from "../database/entity";
-import { serializeUserWithPerms } from "../database/serializer";
+import { serializeUserVariantPerms } from "../database/serializer";
 import { CRequest } from "../express";
-import { PermNameComp } from "../services/PermissionsService";
+import { getUserPermissions, PermNameComp } from "../services/PermissionsService";
 import temporaryValueService from "../services/TemporaryValueService";
 import PermissionsRouter from "./permissions_api";
 import RolesRouter from "./roles_api";
@@ -29,7 +29,12 @@ ApiRouter.use("/", UsersRouter);
 
 ApiRouter.post("/auth/@me", ensureAuthenticated, async (req, res) => {
     if (!(req.user instanceof User)) return res.status(500).json({ status: "error", message: "Internal Server Error" });
-    res.json({status: "success", data: {user: serializeUserWithPerms(req.user)}});
+
+    const user = <User>req.user;
+    res.json({
+        status: "success",
+        data: {user: serializeUserVariantPerms(user, await getUserPermissions(user.id))}
+    });
 });
 
 ApiRouter.post("/auth/login", async (req, res) => {
@@ -70,6 +75,11 @@ ApiRouter.post("/auth/login", async (req, res) => {
                 }
             }
 
+            if (user.suspended) {
+                res.status(400).json({ status: "error", message: "User is suspended." });
+                return;
+            }
+
             req.login(user, async loginErr => {
                 if (loginErr) {
                     logger.error(`Error logging in user ${user.username}: ${loginErr}`);
@@ -79,7 +89,11 @@ ApiRouter.post("/auth/login", async (req, res) => {
                 }
 
                 // Return a JSON response indicating successful login
-                res.status(200).json({ status: "success", message: "User logged in successfully", data: { user: await serializeUserWithPerms(user) }});
+                res.status(200).json({
+                    status: "success",
+                    message: "User logged in successfully",
+                    data: { user: serializeUserVariantPerms(user, await getUserPermissions(user.id)) } // TODO: add mfaRecommended
+                });
             });
         })
         .catch(error => {
@@ -151,7 +165,13 @@ ApiRouter.post("/auth/register", async function(req: CRequest, res) {
             }
 
             // Return a JSON response indicating successful registration and login
-            return res.status(201).json({ status: "success", message: "User registered and logged in successfully", data: { user: await serializeUserWithPerms(user) } });
+            return res.status(201).json({
+                status: "success",
+                message: "User registered and logged in successfully",
+                data: {
+                    user: serializeUserVariantPerms(user, await getUserPermissions(user.id))
+                }
+            });
         });
     } catch (error) {
         res.status(500).json({ status: "error", message: "Internal Server Error" });

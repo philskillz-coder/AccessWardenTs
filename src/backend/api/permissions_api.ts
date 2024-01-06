@@ -1,7 +1,7 @@
 import { AppDataSource } from "backend/database/data-source";
 import { Permission, User } from "backend/database/entity";
 import { PagePermissions } from "backend/database/required-data";
-import { serializePermission, serializePermissionHard } from "backend/database/serializer";
+import { serializePermissionVariantDef, serializeRoleNormal } from "backend/database/serializer";
 import { CRequest } from "backend/express";
 import hashidService from "backend/services/HashidService";
 import { hasPermissions, PermIdComp, PermNameComp } from "backend/services/PermissionsService";
@@ -37,7 +37,7 @@ PermissionsRouter.post("/mg/permissions/get", ensureAuthenticated, requirePermis
     res.json({
         status: "success",
         data: {
-            permissions: permissions.map(perm => serializePermission(perm))
+            permissions: permissions.map(perm => serializePermissionVariantDef(perm))
         }
     });
 });
@@ -65,10 +65,7 @@ PermissionsRouter.post("/mg/permissions/get-all-roles", ensureAuthenticated, req
         status: "success",
         data: {
             // TODO: create serializer + type
-            roles: permission.rolePermissions.map(rolePerm => ({
-                id: hashidService.roles.encode(rolePerm.role.id),
-                name: rolePerm.role.name,
-            }))
+            roles: permission.rolePermissions.map(rp => serializeRoleNormal(rp.role))
         }
     });
 });
@@ -105,7 +102,7 @@ PermissionsRouter.post("/mg/permissions/search", ensureAuthenticated, requirePer
         status: "success",
         data: {
             // todo: use normal serializer
-            permissions: permissions.map(perm => serializePermissionHard(perm))
+            permissions: permissions.map(serializePermissionVariantDef)
         }
     });
 });

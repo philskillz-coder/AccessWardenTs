@@ -2,11 +2,12 @@ import "./view-users.scss";
 
 import { ModalConfirmation } from "@components/ModalConfirmation";
 import { ShowIfPermission } from "@components/ShowIfPermission";
-import { Button, FormControl, FormLabel, Modal, ModalBody, ModalFooter, ModalHeader } from "@hope-ui/solid";
+import { Avatar, Button, FormControl, FormLabel, HStack, Modal, ModalBody, ModalFooter, ModalHeader, Tag, VStack } from "@hope-ui/solid";
 import { Input, ModalCloseButton, ModalContent, ModalOverlay, notificationService } from "@hope-ui/solid";
 import { useNavigate } from "@solidjs/router";
-import { ApiResponseFlags, CleanUser } from "@typings";
-import { BiRegularCheck, BiRegularX, BiSolidPencil } from "solid-icons/bi";
+import { ApiResponseFlags, UserVariantDef } from "@typings";
+import { format } from "date-fns";
+import { BiRegularCheck, BiRegularX, BiSolidPencil, BiSolidPlusCircle } from "solid-icons/bi";
 import { createSignal, For, onCleanup, Show } from "solid-js";
 
 import Store from "../Store";
@@ -16,13 +17,13 @@ function ViewUsers(props) {
     type _Role = {id: string, name: string, has: boolean};
 
     const store: () => Store = props.store;
-    const [users, setUsers] = createSignal([]);
+    const [users, setUsers] = createSignal<UserVariantDef[]>([]);
     const [usersEndReached, setUsersEndReached] = createSignal(false);
     const [usersLoading, setUsersLoading] = createSignal(false); // TODO: use this to show loading indicator
     const [search, setSearch] = createSignal("");
     let searchTimeout: NodeJS.Timeout | null = null;
 
-    const [selectedUser, setSelectedUser] = createSignal<CleanUser | null>(null);
+    const [selectedUser, setSelectedUser] = createSignal<UserVariantDef | null>(null);
     const [selectedUserRoles, setSelectedUserRoles] = createSignal<_Role[] | null>(null);
     const [displayedUserRoles, setDisplayedUserRoles] = createSignal<_Role[] | null>(null);
 
@@ -35,6 +36,8 @@ function ViewUsers(props) {
 
     const [loginAsUserCR, setLoginAsUserCR] = createSignal(false);
     const [deleteUserCR, setDeleteUserCR] = createSignal(false);
+    const [verifyEmailCR, setVerifyEmailCR] = createSignal(false);
+    const [suspendUserCR, setSuspendUserCR] = createSignal(false);
 
     const [hasPagePermission, setHasPagePermission] = createSignal<boolean | null>(null);
 
@@ -109,8 +112,9 @@ function ViewUsers(props) {
         }, 300);
     }
 
-    function hasPermission(permission: string) {
-        return store().user().permissions.includes(permission);
+    // eslint-disable-next-line no-unused-vars
+    function hasPermission(check: {name?: string, id?: string}) {
+        return store().user().permissions.some(permission => (check.id !== undefined ? permission.id === check.id : true) && (check.name !== undefined ? permission.name === check.name : true));
     }
 
     function getSelectedUserRoles() {
@@ -219,6 +223,48 @@ function ViewUsers(props) {
                 // nothing updated in user object
                 setNewPassword(null);
                 closePasswordEditor();
+            }
+        });
+    }
+
+    function verifyEmail() {
+        api.post("/api/mg/users/verify-email", { userId: selectedUser().id }, async res => {
+            if (res.hasError()) {
+                notificationService.show({
+                    status: "danger",
+                    title: "Error",
+                    description: res.message
+                });
+            } else {
+                notificationService.show({
+                    status: "success",
+                    title: "Success",
+                    description: "Email verified"
+                });
+                setSelectedUser({ ...selectedUser(), isEmailVerified: true });
+                updateUserList();
+                setVerifyEmailCR(false);
+            }
+        });
+    }
+
+    function toggleUserSuspension() {
+        api.post("/api/mg/users/toggle-suspension", { userId: selectedUser().id }, async res => {
+            if (res.hasError()) {
+                notificationService.show({
+                    status: "danger",
+                    title: "Error",
+                    description: res.message
+                });
+            } else {
+                notificationService.show({
+                    status: "success",
+                    title: "Success",
+                    description: selectedUser().suspended ? "User unsuspended" : "User suspended"
+                });
+                setSelectedUser({ ...selectedUser(), suspended: !selectedUser().suspended });
+                updateUserList();
+                setSuspendUserCR(false);
             }
         });
     }
@@ -346,7 +392,7 @@ function ViewUsers(props) {
         }
     }
 
-    function selectUser(user: CleanUser) {
+    function selectUser(user: UserVariantDef) {
         setShowRoles(false);
         setShowInfo(true);
         setSelectedUserRoles(null);
@@ -420,11 +466,15 @@ function ViewUsers(props) {
         });
     }
 
+    function avUrl(user: UserVariantDef) {
+        return user.avatar; // todo url
+    }
+
     return (
         <ShowIfPermission hasPermission={hasPagePermission}>
 
             <div class="ui-scroller-menu">
-                <div class="ui-scroller">
+                <div class="ui-scroller" id="u-scroll">
                     <div class="data-pin">
                         <label for="mg-search-usr">Search</label>
                         <input id="mg-search-usr" placeholder="..." onInput={e => searchUsers(e.target.value)}/>
@@ -433,11 +483,31 @@ function ViewUsers(props) {
                     <div id="vu-data" class="data-scroll">
                         <For each={users()}>
                             {user => (
-                                <div class="ui-bg-gray5">
-                                    <button onClick={() => selectUser(user)}>
-                                        {user.username}
-                                    </button>
-                                </div>
+                                <HStack
+                                    class="ui-bg-gray5 dbg1"
+                                    role="button"
+                                    onClick={() => selectUser(user)}
+                                    justifyContent="left"
+                                    height="fit-content"
+                                    padding="$2"
+                                >
+                                    <Avatar src={avUrl(user)} size="md" />
+                                    <VStack marginLeft="$1" width="100%" alignItems="start">
+                                        <span>{user.username}</span>
+                                        <span>{user.email}</span>
+                                        <HStack>
+                                            <Show when={user.suspended}>
+                                                <Tag cursor="default" colorScheme="danger" title="Suspended">Suspended</Tag>
+                                            </Show>
+                                            <Show when={!user.isEmailVerified}>
+                                                <Tag cursor="default" colorScheme="danger" title="Email not verified">Not Verified</Tag>
+                                            </Show>
+                                            <Show when={user.mfaEnabled}>
+                                                <Tag cursor="default" colorScheme="success" title="MFA enabled">MFA</Tag>
+                                            </Show>
+                                        </HStack>
+                                    </VStack>
+                                </HStack>
                             )}
                         </For>
                     </div>
@@ -445,7 +515,20 @@ function ViewUsers(props) {
                 <div class="ui-scroller-content center">
                     <Show when={selectedUser()}>
                         <div class="ui-modal w-40">
-                            <h1>{selectedUser().username}</h1>
+                            <HStack>
+                                <Avatar src={avUrl(selectedUser())} size="md" />
+                                <VStack marginLeft="$1" width="100%" alignItems="start">
+                                    <Show when={selectedUser().suspended}>
+                                        <Tag colorScheme="danger" cursor="default" title="Suspended">Suspended</Tag>
+                                    </Show>
+                                    <h1>{selectedUser().username}</h1>
+                                    <h3>{selectedUser().email}</h3>
+                                    <HStack>
+                                        <Tag title="Created at" cursor="default"><div class="ui-icon me-1"><BiSolidPlusCircle size={14}/></div> {format(selectedUser().createdAt, "yyyy-MM-dd")}</Tag>
+                                        <Tag title="Modified at" cursor="default"><div class="ui-icon me-1"><BiSolidPencil size={14}/></div> {format(selectedUser().updatedAt, "yyyy-MM-dd")}</Tag>
+                                    </HStack>
+                                </VStack>
+                            </HStack>
                             <div class="actions">
                                 <div class="action border">
                                     <button classList={{"active": showInfo()}} onClick={toggleInfo} disabled={showInfo()}>Info</button>
@@ -459,8 +542,8 @@ function ViewUsers(props) {
                                             type="button"
                                             class="bg-info ui-icon w-20"
                                             onClick={() => setEditingEmail(true)}
-                                            title={!hasPermission("Admin.Edit.User.Email") ? "You don't have the permission to do that!" : ""}
-                                            disabled={!hasPermission("Admin.Edit.User.Email")}
+                                            title={!hasPermission({name: "Admin.Edit.User.Email"}) ? "You don't have the permission to do that!" : ""}
+                                            disabled={!hasPermission({name: "Admin.Edit.User.Email"})}
                                         >
                                             <div><BiSolidPencil size={15} color="#ffffff"/></div>
                                         </button>
@@ -489,8 +572,8 @@ function ViewUsers(props) {
                                             type="button"
                                             class="bg-info ui-icon w-20"
                                             onClick={() => setEditingUsername(true)}
-                                            title={!hasPermission("Admin.Edit.User.Username") ? "You don't have the permission to do that!" : ""}
-                                            disabled={!hasPermission("Admin.Edit.User.Username")}
+                                            title={!hasPermission({name: "Admin.Edit.User.Username"}) ? "You don't have the permission to do that!" : ""}
+                                            disabled={!hasPermission({name: "Admin.Edit.User.Username"})}
                                         >
                                             <div><BiSolidPencil size={15} color="#ffffff"/></div>
                                         </button>
@@ -519,8 +602,8 @@ function ViewUsers(props) {
                                             type="button"
                                             class="bg-info ui-icon w-20"
                                             onClick={() => setEditingPassword(true)}
-                                            title={!hasPermission("Admin.Edit.User.Password") ? "You don't have the permission to do that!" : ""}
-                                            disabled={!hasPermission("Admin.Edit.User.Password")}
+                                            title={!hasPermission({name: "Admin.Edit.User.Password"}) ? "You don't have the permission to do that!" : ""}
+                                            disabled={!hasPermission({name: "Admin.Edit.User.Password"})}
                                         >
                                             <div><BiSolidPencil size={15} color="#ffffff"/></div>
                                         </button>
@@ -545,8 +628,21 @@ function ViewUsers(props) {
                                     <div class="action bg-info">
                                         <button
                                             type="button"
-                                            title={!hasPermission("Admin.LoginAsUser") ? "You don't have the permission to do that!" : ""}
-                                            disabled={!hasPermission("Admin.LoginAs")}
+                                            title={!(hasPermission({name: "Admin.Edit.User.VerifyEmail"}) && !selectedUser().isEmailVerified) ? "You don't have the permission to do that!" : ""}
+                                            disabled={!(hasPermission({name: "Admin.Edit.User.VerifyEmail"}) && !selectedUser().isEmailVerified)}
+                                            onClick={() => setVerifyEmailCR(true)}
+                                        >
+                                            Verify email
+                                        </button>
+                                        <ModalConfirmation isOpen={verifyEmailCR} onCancel={() => setVerifyEmailCR(false)} onConfirm={verifyEmail} title="Confirmation required">
+                                            <p>Verify email for {selectedUser().username}?</p>
+                                        </ModalConfirmation>
+                                    </div>
+                                    <div class="action bg-info">
+                                        <button
+                                            type="button"
+                                            title={!hasPermission({name: "Admin.LoginAs"}) ? "You don't have the permission to do that!" : ""}
+                                            disabled={!hasPermission({name: "Admin.LoginAs"})}
                                             onClick={() => setLoginAsUserCR(true)}
                                         >
                                             Login as user
@@ -558,8 +654,25 @@ function ViewUsers(props) {
                                     <div class="action bg-danger">
                                         <button
                                             type="button"
-                                            title={!hasPermission("Admin.Edit.User.Delete") ? "You don't have the permission to do that!" : ""}
-                                            disabled={!hasPermission("Admin.Edit.User.Delete")}
+                                            title={!hasPermission({name: "Admin.Edit.User.Suspend"}) ? "You don't have the permission to do that!" : ""}
+                                            disabled={!hasPermission({name: "Admin.Edit.User.Suspend"})}
+                                            onClick={() => setSuspendUserCR(true)}
+                                        >
+                                            <Show when={!selectedUser().suspended}
+                                                fallback="Unsuspend"
+                                            >
+                                                Suspend
+                                            </Show>
+                                        </button>
+                                        <ModalConfirmation isOpen={suspendUserCR} onCancel={() => setSuspendUserCR(false)} onConfirm={toggleUserSuspension} title="Confirmation required">
+                                            <p>Are you sure you want to {selectedUser().suspended ? "unsuspend" : "suspend"} {selectedUser().username}</p>
+                                        </ModalConfirmation>
+                                    </div>
+                                    <div class="action bg-danger">
+                                        <button
+                                            type="button"
+                                            title={!hasPermission({name: "Admin.Edit.User.Delete"}) ? "You don't have the permission to do that!" : ""}
+                                            disabled={!hasPermission({name: "Admin.Edit.User.Delete"})}
                                             onClick={() => setDeleteUserCR(true)}
                                         >
                                             Delete
@@ -577,7 +690,7 @@ function ViewUsers(props) {
                                                 <div class="ui-bg-gray4 action">
                                                     <button
                                                         type="button"
-                                                        disabled={!hasPermission("Admin.Edit.User.Roles")}
+                                                        disabled={!hasPermission({name: "Admin.Edit.User.Roles"})}
                                                     >
                                                         {role.name}
                                                     </button>
@@ -586,7 +699,7 @@ function ViewUsers(props) {
                                                         classList={{
                                                             "bg-success": getRoleStatus(role.id)
                                                         }}
-                                                        disabled={!(hasPermission("Admin.Edit.User.Roles") && !getRoleStatus(role.id))}
+                                                        disabled={!(hasPermission({name: "Admin.Edit.User.Roles"}) && !getRoleStatus(role.id))}
                                                         onClick={() => toggleUserRole(role)}
                                                     >
                                                         <div><BiRegularCheck size={15} color="#ffffff"/></div>
@@ -596,7 +709,7 @@ function ViewUsers(props) {
                                                         classList={{
                                                             "bg-danger": !getRoleStatus(role.id)
                                                         }}
-                                                        disabled={!(hasPermission("Admin.Edit.User.Roles") && getRoleStatus(role.id))}
+                                                        disabled={!(hasPermission({name: "Admin.Edit.User.Roles"}) && getRoleStatus(role.id))}
                                                         onClick={() => toggleUserRole(role)}
                                                     >
                                                         <div><BiRegularX size={15} color="#ffffff"/></div>
@@ -609,8 +722,8 @@ function ViewUsers(props) {
                                         <button
                                             type="button"
                                             class="bg-info"
-                                            title={!hasPermission("Admin.Edit.User.Roles") ? "You don't have the permission to do that!" : ""}
-                                            disabled={!(hasPermission("Admin.Edit.User.Roles") && (getChangedRoles()?.length || 0) > 0)}
+                                            title={!hasPermission({name: "Admin.Edit.User.Roles"}) ? "You don't have the permission to do that!" : ""}
+                                            disabled={!(hasPermission({name: "Admin.Edit.User.Roles"}) && (getChangedRoles()?.length || 0) > 0)}
                                             onClick={() => resetChangedRoles()}
                                         >
                                             Reset
@@ -618,8 +731,8 @@ function ViewUsers(props) {
                                         <button
                                             type="button"
                                             class="bg-info"
-                                            title={!hasPermission("Admin.Edit.User.Roles") ? "You don't have the permission to do that!" : ""}
-                                            disabled={!(hasPermission("Admin.Edit.User.Roles") && (getChangedRoles()?.length || 0) > 0)}
+                                            title={!hasPermission({name: "Admin.Edit.User.Roles"}) ? "You don't have the permission to do that!" : ""}
+                                            disabled={!(hasPermission({name: "Admin.Edit.User.Roles"}) && (getChangedRoles()?.length || 0) > 0)}
                                             onClick={() => saveChangedRoles()}
                                         >
                                             Save

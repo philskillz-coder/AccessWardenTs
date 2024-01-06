@@ -302,7 +302,7 @@ label {
             align-items: center;
             justify-content: center; /* Horizontally center the content in case of multi-line content */
             text-align: center; /* Horizontally center the content */
-            height: 50px;
+            min-height: 50px;
             border-radius: 5px;
             overflow: hidden;
 
@@ -357,7 +357,7 @@ label {
     
             &>div {
                 display: inline-block;
-                width: 150px;
+                width: max-content;
     
                 &:not(:last-child) {
                     margin-right: 5px;
@@ -599,7 +599,7 @@ label {
 }
 
 .actions {
-    padding: 8px 16px;
+    padding: 8px 0px;
 }
 
 .ui-modal {

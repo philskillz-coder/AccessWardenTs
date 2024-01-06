@@ -3,7 +3,7 @@ import { isValidEmail } from "@shared/Mail";
 import { getFirstPasswordError } from "@shared/Password";
 import { getFirstUsernameError } from "@shared/Username";
 import { A, useNavigate } from "@solidjs/router";
-import { CleanUser } from "@typings";
+import { UserVariantP } from "@typings";
 import { createEffect, createSignal,  Show } from "solid-js";
 
 import Store from "../Store";
@@ -78,7 +78,7 @@ const Register = props => {
                     title: "Success",
                     description: "Registered successfully"
                 });
-                const registeredUser: CleanUser = res.data.user;
+                const registeredUser: UserVariantP = res.data.user;
                 store().setUser(registeredUser);
                 navigate("/account");
             }

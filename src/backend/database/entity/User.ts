@@ -37,6 +37,9 @@ export class User {
     @Column({default: ""})
         loginSession: string = "";
 
+    @Column({default: false})
+        suspended: boolean = false;
+
     @ManyToMany(() => Role)
     @JoinTable()
         roles: Role[];

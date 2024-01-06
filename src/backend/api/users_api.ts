@@ -4,10 +4,10 @@ import { isValidEmail } from "@shared/Mail";
 import { AppDataSource } from "backend/database/data-source";
 import { Role, User } from "backend/database/entity";
 import { PagePermissions } from "backend/database/required-data";
-import { serializeUser, serializeUserWithPerms } from "backend/database/serializer";
+import { serializeRoleNormal, serializeUserVariantDef, serializeUserVariantPerms } from "backend/database/serializer";
 import { CRequest } from "backend/express";
 import hashidService from "backend/services/HashidService";
-import { PermNameComp } from "backend/services/PermissionsService";
+import { getUserPermissions, PermNameComp } from "backend/services/PermissionsService";
 import dotenv from "dotenv";
 import { Router } from "express";
 import { ILike } from "typeorm";
@@ -52,11 +52,15 @@ UsersRouter.post("/mg/users/login-as", ensureAuthenticated, requirePermissions(
             return res.status(500).json({ status: "error", message: "Internal Server Error" });
         }
 
-        // Return a JSON response indicating successful login
+        const serialized = serializeUserVariantPerms(targetUser, await getUserPermissions(user.id));
+
         res.status(200).json({
             status: "success",
             message: "User logged in successfully",
-            data: { user: serializeUserWithPerms(targetUser) }
+            data: { user: {
+                ...serialized,
+                mfaSuggested: false // TODO: check if the user has roles that require mfa and dont has mfa enabled
+            } }
         });
     });
 });
@@ -80,7 +84,7 @@ UsersRouter.post("/mg/users/get", ensureAuthenticated, requirePermissions(
     res.json({
         status: "success",
         data: {
-            users: users.map(user => serializeUser(user))
+            users: users.map(serializeUserVariantDef)
         }
     });
 });
@@ -116,8 +120,7 @@ UsersRouter.post("/mg/users/get-all-roles", ensureAuthenticated, requirePermissi
     );
 
     const userRoles = roles.map(role => ({
-        id: hashidService.roles.encode(role.id),
-        name: role.name,
+        ...serializeRoleNormal(role),
         has: user.roles.some(userRole => userRole.id === role.id)
     }));
 
@@ -165,7 +168,7 @@ UsersRouter.post("/mg/users/search", ensureAuthenticated, requirePermissions(
     res.json({
         status: "success",
         data: {
-            users: users.map(user => serializeUser(user))
+            users: users.map(serializeUserVariantDef)
         }
     });
 });
@@ -296,10 +299,66 @@ async (req: CRequest, res) => {
     const passwordHash = Hashing.createHash(req.body.password, salt, process.env.HASH_PEPPER);
     user.passwordHash = passwordHash;
     user.passwordSalt = salt;
+    user.loginSession = Hashing.generateSalt();
+
     await AppDataSource.getRepository(User).save(user);
     res.json({
         status: "success",
         message: "Password updated"
+    });
+});
+
+UsersRouter.post("/mg/users/verify-email", ensureAuthenticated, requirePermissions(
+    PermNameComp, PagePermissions.AdminEditUserVerifyEmail
+), targetUserNotAdmin, async (req: CRequest, res) => {
+    const userId = hashidService.users.decodeSingle(req.body.userId);
+    const user = await AppDataSource.getRepository(User).findOne({
+        where: {
+            id: userId
+        }
+    });
+
+    if (!user) {
+        res.status(400).json({
+            status: "error",
+            message: "User not found"
+        });
+        return;
+    }
+
+    user.isEmailVerified = true;
+    await AppDataSource.getRepository(User).save(user);
+    res.json({
+        status: "success",
+        message: "Email verified"
+    });
+});
+
+UsersRouter.post("/mg/users/toggle-suspension", ensureAuthenticated, requirePermissions(
+    PermNameComp, PagePermissions.AdminEditUserSuspend
+), targetUserNotAdmin, async (req: CRequest, res) => {
+    const userId = hashidService.users.decodeSingle(req.body.userId);
+    const user = await AppDataSource.getRepository(User).findOne({
+        where: {
+            id: userId
+        }
+    });
+
+    if (!user) {
+        res.status(400).json({
+            status: "error",
+            message: "User not found"
+        });
+        return;
+    }
+
+    user.suspended = !user.suspended;
+    user.loginSession = Hashing.generateSalt();
+
+    await AppDataSource.getRepository(User).save(user);
+    res.json({
+        status: "success",
+        message: "User suspension updated"
     });
 });
 

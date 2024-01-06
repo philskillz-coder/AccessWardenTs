@@ -1,7 +1,7 @@
 import { AppDataSource } from "backend/database/data-source";
 import { Permission, Role, User } from "backend/database/entity";
 import { PagePermissions } from "backend/database/required-data";
-import { serializePermissionHard, serializeRole } from "backend/database/serializer";
+import { serializePermissionNormal, serializeRoleVariantDef } from "backend/database/serializer";
 import { CRequest } from "backend/express";
 import hashidService from "backend/services/HashidService";
 import { getUserPermissions, hasPermissionsFrom, PermIdComp, PermNameComp } from "backend/services/PermissionsService";
@@ -29,7 +29,7 @@ RolesRouter.post("/mg/roles/get", ensureAuthenticated, requirePermissions(
     res.json({
         status: "success",
         data: {
-            roles: roles.map(role => serializeRole(role))
+            roles: roles.map(serializeRoleVariantDef)
         }
     });
 });
@@ -56,11 +56,10 @@ RolesRouter.post("/mg/roles/get-all-permissions", ensureAuthenticated, requirePe
     res.json({
         status: "success",
         data: {
-            roles: role.rolePermissions.map(rolePerm => serializePermissionHard(rolePerm.permission))
+            roles: role.rolePermissions.map(rolePerm => serializePermissionNormal(rolePerm.permission))
         }
     });
 });
-// TODO: all return types should have typehinting (interfaces)
 
 RolesRouter.post("/mg/roles/search", ensureAuthenticated, requirePermissions(
     PermNameComp, PagePermissions.AdminViewRoles
@@ -94,7 +93,7 @@ RolesRouter.post("/mg/roles/search", ensureAuthenticated, requirePermissions(
     res.json({
         status: "success",
         data: {
-            roles: roles.map(role => serializeRole(role))
+            roles: roles.map(serializeRoleVariantDef)
         }
     });
 });

@@ -1,11 +1,11 @@
-import { CleanUser } from "@typings";
+import { UserVariantP } from "@typings";
 
 import { api } from "../utils";
 
 export default class Store {
-    user: () => CleanUser | null;
+    user: () => UserVariantP | null;
     // eslint-disable-next-line no-unused-vars
-    setUser: (user: CleanUser) => void;
+    setUser: (user: UserVariantP) => void;
 
     constructor(user, setUser) {
         this.user = user;

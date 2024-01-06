@@ -15,14 +15,18 @@ export enum PagePermissions {
     AdminViewPermissions = "Admin.View.Permission",
 
     AdminCreateUser = "Admin.Create.User",
+    AdminCreateRole = "Admin.Create.Role",
+    AdminCreatePermission = "Admin.Create.Permission",
     AdminLoginAs = "Admin.LoginAs",
 
     AdminEditUserEmail = "Admin.Edit.User.Email",
     AdminEditUserUsername = "Admin.Edit.User.Username",
     AdminEditUserPassword = "Admin.Edit.User.Password",
     AdminEditUserMfa = "Admin.Edit.User.Mfa",
+    AdminEditUserVerifyEmail = "Admin.Edit.User.VerifyEmail",
     AdminEditUserProfile = "Admin.Edit.User.Profile",
     AdminEditUserRoles = "Admin.Edit.User.Roles",
+    AdminEditUserSuspend = "Admin.Edit.User.Suspend",
     AdminEditUserDelete = "Admin.Edit.User.Delete",
 
     AdminEditRoleName = "Admin.Edit.Role.Name",

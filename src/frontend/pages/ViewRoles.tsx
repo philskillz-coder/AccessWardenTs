@@ -4,7 +4,7 @@ import { ModalConfirmation } from "@components/ModalConfirmation";
 import { ShowIfPermission } from "@components/ShowIfPermission";
 import { Button, FormControl, FormLabel, Modal, ModalBody, ModalFooter, ModalHeader } from "@hope-ui/solid";
 import { Input, ModalCloseButton, ModalContent, ModalOverlay, notificationService } from "@hope-ui/solid";
-import { ApiResponseFlags, CleanRole } from "@typings";
+import { ApiResponseFlags, RoleVariantDef } from "@typings";
 import { BiRegularCheck, BiRegularQuestionMark, BiRegularX, BiSolidPencil } from "solid-icons/bi";
 import { createSignal, For, onCleanup, Show } from "solid-js";
 
@@ -21,7 +21,7 @@ function ViewRoles(props) {
     const [search, setSearch] = createSignal("");
     let searchTimeout: NodeJS.Timeout | null = null;
 
-    const [selectedRole, setSelectedRole] = createSignal<CleanRole | null>(null);
+    const [selectedRole, setSelectedRole] = createSignal<RoleVariantDef | null>(null);
     const [selectedRolePermissions, setSelectedRolePermissions] = createSignal<_Permission[] | null>(null);
     const [displayedRolePermissions, setDisplayedRolePermissions] = createSignal<_Permission[] | null>(null);
 
@@ -102,8 +102,9 @@ function ViewRoles(props) {
         }, 300);
     }
 
-    function hasPermission(permission: string) {
-        return store().user().permissions.includes(permission);
+    // eslint-disable-next-line no-unused-vars
+    function hasPermission(check: {name?: string, id?: string}) {
+        return store().user().permissions.some(permission => (check.id !== undefined ? permission.id === check.id : true) && (check.name !== undefined ? permission.name === check.name : true));
     }
 
     function getSelectedRolePermissions() {
@@ -263,7 +264,7 @@ function ViewRoles(props) {
         }
     }
 
-    function selectRole(role: CleanRole) {
+    function selectRole(role: RoleVariantDef) {
         setShowPermissions(false);
         setShowInfo(true);
         setSelectedRolePermissions(null);
@@ -375,8 +376,8 @@ function ViewRoles(props) {
                                             type="button"
                                             class="bg-info ui-icon w-20"
                                             onClick={() => setEditingName(true)}
-                                            title={!hasPermission("Admin.Edit.Role.Name") ? "You don't have the permission to do that!" : ""}
-                                            disabled={!hasPermission("Admin.Edit.Role.Name")}
+                                            title={!hasPermission({name: "Admin.Edit.Role.Name"}) ? "You don't have the permission to do that!" : ""}
+                                            disabled={!hasPermission({name: "Admin.Edit.Role.Name"})}
                                         >
                                             <div><BiSolidPencil size={15} color="#ffffff"/></div>
                                         </button>
@@ -401,8 +402,8 @@ function ViewRoles(props) {
                                     <div class="action bg-danger">
                                         <button
                                             type="button"
-                                            title={!hasPermission("Admin.Edit.Role.Delete") ? "You don't have the permission to do that!" : ""}
-                                            disabled={!hasPermission("Admin.Edit.Role.Delete")}
+                                            title={!hasPermission({name: "Admin.Edit.Role.Delete"}) ? "You don't have the permission to do that!" : ""}
+                                            disabled={!hasPermission({name: "Admin.Edit.Role.Delete"})}
                                             onClick={() => setDeleteRoleCR(true)}
                                         >
                                             Delete
@@ -420,7 +421,7 @@ function ViewRoles(props) {
                                                 <div class="ui-bg-gray4 action">
                                                     <button
                                                         type="button"
-                                                        disabled={!hasPermission("Admin.Edit.Roles.Permissions")}
+                                                        disabled={!hasPermission({name: "Admin.Edit.Roles.Permissions"})}
                                                     >
                                                         {perm.name}
                                                     </button>
@@ -429,7 +430,7 @@ function ViewRoles(props) {
                                                         classList={{
                                                             "bg-success": getPermissionStatus(perm.id)
                                                         }}
-                                                        disabled={!(hasPermission("Admin.Edit.Roles.Permissions") && getPermissionStatus(perm.id) !== true)}
+                                                        disabled={!(hasPermission({name: "Admin.Edit.Roles.Permissions"}) && getPermissionStatus(perm.id) !== true)}
                                                         onClick={() => toggleRolePermission(perm, true)}
                                                     >
                                                         <div><BiRegularCheck size={15} color="#ffffff"/></div>

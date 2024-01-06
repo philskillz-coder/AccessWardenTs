@@ -1,5 +1,7 @@
+import { MfaSuggested } from "@components/MfaSuggested";
 import { notificationService } from "@hope-ui/solid";
 import { A, useNavigate } from "@solidjs/router";
+import { UserVariantAuth } from "@typings";
 import Store from "frontend/Store";
 import { BsEye, BsEyeSlash } from "solid-icons/bs";
 import {createSignal, Show} from "solid-js";
@@ -32,6 +34,15 @@ const Login = props => {
                     title: "Success",
                     description: "Logged in successfully"
                 });
+                const user: UserVariantAuth = res.data.user;
+                if (user.mfaSuggested) {
+                    notificationService.show({
+                        status: "info",
+                        render: () => (
+                            <MfaSuggested  />
+                        )
+                    });
+                }
                 store().setUser(res.data.user);
 
                 const params = new URLSearchParams(window.location.search);
