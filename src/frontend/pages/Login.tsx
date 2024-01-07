@@ -1,4 +1,4 @@
-import { MfaSuggested } from "@components/MfaSuggested";
+import { MfaSuggested } from "@components/notifications/MfaSuggested";
 import { notificationService } from "@hope-ui/solid";
 import { A, useNavigate } from "@solidjs/router";
 import { UserVariantAuth } from "@typings";
@@ -38,8 +38,9 @@ const Login = props => {
                 if (user.mfaSuggested) {
                     notificationService.show({
                         status: "info",
-                        render: () => (
-                            <MfaSuggested  />
+                        duration: 10000,
+                        render: props => (
+                            <MfaSuggested {...props}/>
                         )
                     });
                 }

@@ -13,13 +13,13 @@ const config: HopeThemeConfig = {
 };
 
 render(() =>
-    <HopeProvider config={config}>
-        <NotificationsProvider>
-            <Toaster/>
-            <Router>
+    <Router>
+        <HopeProvider config={config}>
+            <NotificationsProvider>
+                <Toaster/>
                 <App />
-            </Router>
-        </NotificationsProvider>
-    </HopeProvider>,
+            </NotificationsProvider>
+        </HopeProvider>
+    </Router>,
     document.getElementById("app") as HTMLElement
 );
