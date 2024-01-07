@@ -3,7 +3,7 @@ import logger from "@shared/Logger";
 import { isValidEmail } from "@shared/Mail";
 import { isPasswordValid, PASSWORD_RULES } from "@shared/Password";
 import { isUsernameValid } from "@shared/Username";
-import { ApiResponseFlags } from "@typings";
+import { ApiResponseFlags, UserVariantAuth } from "@typings";
 import dotenv from "dotenv";
 import { Router } from "express";
 import speakeasy from "speakeasy";
@@ -45,7 +45,10 @@ ApiRouter.post("/auth/login", async (req, res) => {
     const isMail = req.body.username.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
     const condition = isMail ? { email: req.body.username } : { username: req.body.username };
 
-    AppDataSource.getRepository(User).findOne({ where: condition })
+    AppDataSource.getRepository(User).findOne({
+        where: condition,
+        relations: ["roles"]
+    })
         .then(user => {
             if (!user) {
                 res.status(400).json({ status: "error", message: "User does not exist." });
@@ -88,11 +91,18 @@ ApiRouter.post("/auth/login", async (req, res) => {
                     return;
                 }
 
+                const mfaRecommended = user.roles.map(role => !role.requiresMfa || user.mfaEnabled).some(v => !v);
+
                 // Return a JSON response indicating successful login
                 res.status(200).json({
                     status: "success",
                     message: "User logged in successfully",
-                    data: { user: serializeUserVariantPerms(user, await getUserPermissions(user.id)) } // TODO: add mfaRecommended
+                    data: {
+                        user: <UserVariantAuth>{
+                            ...serializeUserVariantPerms(user, await getUserPermissions(user.id)),
+                            mfaSuggested: mfaRecommended
+                        }
+                    }
                 });
             });
         })

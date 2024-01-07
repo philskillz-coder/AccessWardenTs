@@ -16,7 +16,9 @@ export async function getUserPermissions(userId: number): Promise<Permission[]> 
         // When here: permissions are not cached
         // Find the user with roles and rolePermissions
         const user = await AppDataSource.getRepository(User).findOne({
-            where: { id: userId },
+            where: {
+                id: userId,
+            },
             relations: ["roles", "roles.rolePermissions", "roles.rolePermissions.role", "roles.rolePermissions.permission"],
         });
 

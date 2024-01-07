@@ -1,156 +1,15 @@
 $SIDEBAR_WIDTH: 220px;
 
-.sidebar {
-    position: fixed;
-    left: 0;
-    bottom: 0;
-    height: 100vh;
-    width: $SIDEBAR_WIDTH;
-    background-color: var(--gray5);
+// .content {
+//     right: 0;
+//     bottom: 0;
+//     position: fixed;
+//     width: calc(100vw - 220px);
+//     height: 100vh;
+//     padding: 16px;
+//     background-color: var(--background);
+// }
 
-    .sidebar-nav {
-        .navbar-logo-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-            height: 100%;
-        }
-
-        .navbar-logo {
-            display: block;
-            height: 92px;
-            border-radius: 4px;
-            transition: opacity .3s ease-in-out;
-        }
-
-        .sidebar-nav-item {
-            display: flex;
-            align-items: center;
-            border-radius: 8px;
-            padding: 8px 8px 8px 12px;
-            margin: 2px 11.5px;
-            width: calc(100% - 24px);
-            height: 38px;
-            font-size: 14px;
-            font-weight: 500;
-
-            cursor: pointer;
-            transition: all 0.17s ease;
-
-            &.active {
-                background-color: var(--gray3);
-            }
-
-            &:hover:not(.active) {
-                background-color: var(--gray4);
-            }
-        }
-    }
-
-    .user-panel {
-        display: flex;
-        position: absolute;
-        bottom: 0;
-        width: calc($SIDEBAR_WIDTH - 16px);
-        align-items: center;
-        border: 2px solid transparent;
-        border-radius: 8px;
-        padding: 8px 8px 8px 12px;
-        margin: 8px;
-        transition: background-color .17s ease-in-out;
-        cursor: pointer;
-
-        &:hover {
-            background-color: var(--gray4);
-        }
-
-        .avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
-            border: none;
-        }
-
-        .name-wrapper {
-            margin-left: 8px;
-            font-size: 16px;
-            font-weight: 500;
-            color: var(--text);
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-
-            span {
-                display: block;
-                margin: -5px 0;
-            }
-
-            .user-name {
-                color: var(--gray);
-            }
-        }
-    }
-}
-
-.content {
-    right: 0;
-    bottom: 0;
-    position: fixed;
-    width: calc(100vw - 220px);
-    height: 100vh;
-    padding: 16px;
-    background-color: var(--background);
-}
-
-@media only screen and (max-width: 800px) {
-    $SIDEBAR_HEIGHT: 75px;
-
-    .sidebar {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        top: 0;
-        left: 0;
-        height: $SIDEBAR_HEIGHT;
-        width: 100%;
-
-        .sidebar-nav {
-            display: flex;
-            height: 100%;
-            width: 80%;
-            align-items: center;
-            overflow-x: auto;
-            grid-area: 1 / 1 / 2 / 4;
-
-            .navbar-logo {
-                margin-left: 12px;
-                height: 75px !important;
-            }
-        }
-
-        .user-panel {
-            top: 0;
-            width: unset;
-            height: unset;
-            padding: 8px;
-            right: 10px;
-            grid-area: 1 / 4 / 2 / 5;
-
-            .user-name {
-                display: none;
-            }
-        }
-    }
-
-    .content {
-        position: relative;
-        top: $SIDEBAR_HEIGHT;
-        width: 100%;
-        height: calc(100vh - $SIDEBAR_HEIGHT);
-        padding: 16px;
-        overflow-y: auto;
-    }
-}
 
 $INPUT_COLOR: #99A3BA;
 $INPUT_BORDER: #CDD9ED;
@@ -196,6 +55,27 @@ $CREATE_BUTTON_COLOR: #678EFE;
     text-align: center;
 }
 
+button, a, input, p, textarea, select {
+    &:not(.no-dyn-txt) {
+        color: var(--text);
+        * {
+            color: var(--text);
+        }
+    }
+    &.no-dyn-txt {
+        color: #000000;
+        * {
+            color: #000000;
+        }
+    }
+    &.dyn-txt {
+        color: var(--text);
+        * {
+            color: var(--text);
+        }
+    }
+}
+
 .bg-danger {
     background-color: #F87171 !important;
 }
@@ -226,6 +106,42 @@ $CREATE_BUTTON_COLOR: #678EFE;
     vertical-align: center;
 }
 
+button, input {
+    white-space: nowrap;
+    display: block;
+    height: 41px;
+    border-radius: 5px;
+    
+    &:disabled {
+        &:hover {
+            cursor: default;
+        }
+    }
+
+    &:not(:disabled) {
+        &:hover {
+            cursor: pointer;
+            filter: brightness(85%);
+        }
+    }
+}
+
+button {
+    &:disabled {
+        background-color: var(--gray3);
+        
+        &:hover {
+            cursor: default;
+        }
+    }
+}
+
+a {
+    &:disabled {
+        filter: brightness(85%);
+    }
+}
+
 input {
     display: block;
     position: relative;
@@ -235,11 +151,10 @@ input {
     padding: 8px 16px;
     width: 100%;
     line-height: 25px;
-    font-size: 14px;
+    font-size: 14px !important;
     border-radius: 6px;
     color: var(--text);
     background: none;
-    transition: border .3s ease, color .3s ease;
     border: 1px solid var(--gray3);
 
     &::placeholder {
@@ -309,20 +224,10 @@ label {
             &>button {
                 height: 100%;
                 width: 100%;
-                border-radius: 5px;
                 border: none;
                 background: none;
-                color: var(--text);
                 font-size: 16px;
                 font-weight: 500;
-                transition: background-color .3s ease, color .3s ease;
-    
-                &:not(:disabled) {
-                    &:hover {
-                        cursor: pointer;
-                        background-color: var(--gray3);
-                    }
-                }
             }
         }
     }
@@ -472,33 +377,16 @@ label {
         margin-bottom: 0;
     }
 
-    button, a {
-        &:not(:disabled) {
-            &:hover {
-                cursor: pointer;
-            }
-        }
-        &:disabled {
-            cursor: not-allowed;
-            background: #99A3BA;
-        }
-    }
-
-    button, input, a {
-        user-select: none;
-        white-space: nowrap;
-        display: block;
-        height: 41px;
-
-        &:not(.no-dyn-txt) {
-            color: var(--text);
-        }
-        &.no-dyn-txt {
-            color: #000000;
-        }
-        &.dyn-txt {
-            color: var(--text);
-        }
+    button, input, a { // borders
+        // &:not(.no-dyn-txt) {
+        //     color: var(--text);
+        // }
+        // &.no-dyn-txt {
+        //     color: #000000;
+        // }
+        // &.dyn-txt {
+        //     color: var(--text);
+        // }
 
         &:first-child {
             border-top-right-radius: 0;
@@ -516,10 +404,6 @@ label {
             border-bottom-left-radius: 0;
         }
 
-        // &:not(:first-child) {
-        //     margin-left: -1px;
-        // }
-
         &:not(:first-child):not(:last-child) {
             border-radius: 0;
         }
@@ -529,34 +413,14 @@ label {
         }
     }
 
+    button, a {
+        &:disabled {
+            background: #45474d;
+        }
+    }
+
     &>input {
         z-index: 1;
-        display: block;
-        position: relative;
-        flex: 1 1 auto;
-        margin-top: 0;
-        margin-bottom: 0;
-        padding: 8px 16px;
-        line-height: 25px;
-        font-size: 14px;
-        border-radius: 6px;
-        color: var(--gray2);
-        background: none;
-        transition: border .3s ease, color .3s ease;
-
-        &::placeholder {
-            line-height: 25px; // Increase the line-height for larger placeholder
-            font-size: 14px; // Increase the font-size for larger placeholder
-            color: var(--gray2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        &:focus {
-            outline: none;
-            color: var(--text);
-        }
     }
 
     &>button, &>a {
@@ -564,7 +428,6 @@ label {
         padding: 8px 12px;
         font-size: 14px;
         line-height: 25px;
-        transition: background .3s ease, border .3s ease, color .3s ease;
 
         &:not(:disabled) {
             &:hover {
@@ -572,30 +435,29 @@ label {
             }
             &.active {
                 background-color: var(--gray3);
-                transition: color .3s ease;
             }
         }
     }
 
-    &.no-dyn-txt {
-        button, input, a {
-            &:not(.dyn-txt) {
-                color: #000000;
-            }
-        }
-    }
+    // &.no-dyn-txt {
+    //     button, input, a {
+    //         &:not(.dyn-txt) {
+    //             color: #000000;
+    //         }
+    //     }
+    // }
 
-    &:not(.no-dyn-txt) {
-        button, input, a {
-            color: var(--text);
-        }
-    }
+    // &:not(.no-dyn-txt) {
+    //     button, input, a {
+    //         color: var(--text);
+    //     }
+    // }
 
-    &.dyn-txt {
-        button, input, a {
-            color: var(--text);
-        }
-    }
+    // &.dyn-txt {
+    //     button, input, a {
+    //         color: var(--text);
+    //     }
+    // }
 }
 
 .actions {
@@ -628,7 +490,6 @@ label {
     border-radius: 10px;
     padding: 25px;
     text-align: center;
-    transition: background-color .3s ease, border .3s ease, color .3s ease;
 
     h1 {
         margin: 0;
@@ -641,13 +502,7 @@ label {
 
     span {
         a {
-            color: var(--text);
             text-decoration: underline;
-            transition: color .3s ease;
-
-            &:hover {
-                color: var(--text);
-            }
         }
     }
 }

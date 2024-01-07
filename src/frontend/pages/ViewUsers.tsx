@@ -2,7 +2,7 @@ import "./view-users.scss";
 
 import { ModalConfirmation } from "@components/ModalConfirmation";
 import { ShowIfPermission } from "@components/ShowIfPermission";
-import { Avatar, Button, FormControl, FormLabel, HStack, Modal, ModalBody, ModalFooter, ModalHeader, Tag, VStack } from "@hope-ui/solid";
+import { Avatar, Button, FormControl, FormLabel, HStack, Modal, ModalBody, ModalFooter, ModalHeader, Spinner, Tag, VStack } from "@hope-ui/solid";
 import { Input, ModalCloseButton, ModalContent, ModalOverlay, notificationService } from "@hope-ui/solid";
 import { useNavigate } from "@solidjs/router";
 import { ApiResponseFlags, UserVariantDef } from "@typings";
@@ -19,7 +19,8 @@ function ViewUsers(props) {
     const store: () => Store = props.store;
     const [users, setUsers] = createSignal<UserVariantDef[]>([]);
     const [usersEndReached, setUsersEndReached] = createSignal(false);
-    const [usersLoading, setUsersLoading] = createSignal(false); // TODO: use this to show loading indicator
+    const [usersLoading, setUsersLoading] = createSignal(false);
+    const [showLoading, setShowLoading] = createSignal(false);
     const [search, setSearch] = createSignal("");
     let searchTimeout: NodeJS.Timeout | null = null;
 
@@ -47,7 +48,29 @@ function ViewUsers(props) {
     const count = 25;
 
     function refreshUsers() {
+        setUsersLoading(true); // avoid multiple requests
+
+        // only show loading indicator if loading takes longer than 100ms (avoids blinking)
+        const setLoadTimeout = setTimeout(() => {
+            setShowLoading(true);
+        }, 100);
+
+        const resetLoadTimeout = setTimeout(() => {
+            setUsersLoading(false);
+            setShowLoading(false);
+            notificationService.show({
+                status: "warning",
+                title: "Warning",
+                description: "Could not load users."
+            });
+        }, 5 * 1000);
+
         api.post("/api/mg/users/get", { page: page, count: count }, async res => {
+            clearTimeout(setLoadTimeout);
+            clearTimeout(resetLoadTimeout);
+            setUsersLoading(false);
+            setShowLoading(false);
+
             if (res.hasFlag(ApiResponseFlags.forbidden)) {
                 setHasPagePermission(false);
             } else {
@@ -82,7 +105,29 @@ function ViewUsers(props) {
             refreshUsers();
             setUsersEndReached(false);
         } else {
+            setUsersLoading(true); // avoid multiple requests
+
+            // only show loading indicator if loading takes longer than 100ms (avoids blinking)
+            const setLoadTimeout = setTimeout(() => {
+                setShowLoading(true);
+            }, 100);
+
+            const resetLoadTimeout = setTimeout(() => {
+                setUsersLoading(false);
+                setShowLoading(false);
+                notificationService.show({
+                    status: "warning",
+                    title: "Warning",
+                    description: "Could not load users."
+                });
+            }, 5 * 1000);
+
             api.post("/api/mg/users/search", { page: page, count: count, search: search() }, async res => {
+                clearTimeout(setLoadTimeout);
+                clearTimeout(resetLoadTimeout);
+                setUsersLoading(false);
+                setShowLoading(false);
+
                 if (res.hasError()) {
                     console.log(res.message);
                     return;
@@ -324,11 +369,6 @@ function ViewUsers(props) {
             return;
         }
 
-        setUsersLoading(true);
-        setTimeout(() => {
-            setUsersLoading(false);
-        }, 150);
-
         page++;
         if (search()) {
             doSearch();
@@ -338,25 +378,37 @@ function ViewUsers(props) {
     }
 
     const minWidthForVerticalScroll = 1200;
+    let lastScrollTop: number = 0;
+    let lastScrollTopLeft: number = 0;
 
     function handleScroll() {
         const scrollContainer = document.getElementById("vu-data");
         if (scrollContainer) {
-            const { scrollTop, clientHeight, scrollWidth, scrollHeight, clientWidth } = scrollContainer;
+            const { scrollTop, scrollLeft, clientHeight, scrollWidth, scrollHeight, clientWidth } = scrollContainer;
 
             // Check the screen width using media query
             const isVerticalScroll = window.matchMedia(`(min-width: ${minWidthForVerticalScroll}px)`).matches;
 
-            if (isVerticalScroll) {
-            // Check vertical scrolling
-                if (scrollTop + clientHeight >= scrollHeight - 50) {
+            if (isVerticalScroll) { // vertical scrolling
+                if (scrollTop < lastScrollTop) { // prevent scrolling up
+                    return;
+                }
+
+                lastScrollTop = scrollTop;
+
                 // Load more items when the user is near the bottom
+                if (scrollTop + clientHeight >= scrollHeight - 50) {
                     loadMoreUsers();
                 }
-            } else {
-            // Check horizontal scrolling
-                if (clientWidth + scrollContainer.scrollLeft >= scrollWidth - 50) {
+            } else { // horizontal scrolling
+                if (scrollLeft < lastScrollTopLeft) { // prevent scrolling left
+                    return;
+                }
+
+                lastScrollTopLeft = scrollLeft;
+
                 // Load more items when the user is near the right edge
+                if (clientWidth + scrollLeft >= scrollWidth - 50) {
                     loadMoreUsers();
                 }
             }
@@ -513,7 +565,10 @@ function ViewUsers(props) {
                     </div>
                 </div>
                 <div class="ui-scroller-content center">
-                    <Show when={selectedUser()}>
+                    <Show when={showLoading()}>
+                        <Spinner />
+                    </Show>
+                    <Show when={!showLoading() && selectedUser()}>
                         <div class="ui-modal w-40">
                             <HStack>
                                 <Avatar src={avUrl(selectedUser())} size="md" />
@@ -537,7 +592,7 @@ function ViewUsers(props) {
                                 <Show when={showInfo()}>
                                     <label for="mg-user-mail">Email</label>
                                     <div class="action border">
-                                        <input id="mg-user-mail" placeholder={selectedUser().email} disabled/>
+                                        <input id="mg-user-mail" value={selectedUser().email} disabled/>
                                         <button
                                             type="button"
                                             class="bg-info ui-icon w-20"
@@ -567,7 +622,7 @@ function ViewUsers(props) {
                                     </div>
                                     <label for="mg-user-username">Username</label>
                                     <div class="action border">
-                                        <input id="mg-user-username" placeholder={selectedUser().username} disabled/>
+                                        <input id="mg-user-username" value={selectedUser().username} disabled/>
                                         <button
                                             type="button"
                                             class="bg-info ui-icon w-20"
@@ -597,7 +652,7 @@ function ViewUsers(props) {
                                     </div>
                                     <label for="mg-user-password">Password</label>
                                     <div class="action border">
-                                        <input id="mg-user-password" placeholder="********" disabled/>
+                                        <input id="mg-user-password" value="********" disabled/>
                                         <button
                                             type="button"
                                             class="bg-info ui-icon w-20"
@@ -687,13 +742,8 @@ function ViewUsers(props) {
                                     <div class="ui-scroller w-100 mt-2" style={{"max-height": "250px"}}>
                                         <For each={displayedUserRoles()}>
                                             {role => (
-                                                <div class="ui-bg-gray4 action">
-                                                    <button
-                                                        type="button"
-                                                        disabled={!hasPermission({name: "Admin.Edit.User.Roles"})}
-                                                    >
-                                                        {role.name}
-                                                    </button>
+                                                <div class="action border border-center">
+                                                    <input value={role.name} disabled style={{border: "none"}}/>
                                                     <button
                                                         class="ui-icon w-20"
                                                         classList={{
@@ -718,7 +768,7 @@ function ViewUsers(props) {
                                             )}
                                         </For>
                                     </div>
-                                    <div class="action">
+                                    <div class="action border-center">
                                         <button
                                             type="button"
                                             class="bg-info"
