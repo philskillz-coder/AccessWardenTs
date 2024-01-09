@@ -2,22 +2,25 @@ import "./view-users.scss";
 
 import { ModalConfirmation } from "@components/ModalConfirmation";
 import { ShowIfPermission } from "@components/ShowIfPermission";
-import { Button, FormControl, FormLabel, Modal, ModalBody, ModalFooter, ModalHeader } from "@hope-ui/solid";
+import { Button, FormControl, FormLabel, HStack, Modal, ModalBody, ModalFooter, ModalHeader, Spinner, Tag, Textarea, VStack } from "@hope-ui/solid";
 import { Input, ModalCloseButton, ModalContent, ModalOverlay, notificationService } from "@hope-ui/solid";
 import { ApiResponseFlags, RoleVariantDef } from "@typings";
-import { BiRegularCheck, BiRegularQuestionMark, BiRegularX, BiSolidPencil } from "solid-icons/bi";
+import { format } from "date-fns";
+import { BiRegularCheck, BiRegularX, BiSolidPencil, BiSolidPlusCircle } from "solid-icons/bi";
+import { BsSlash } from "solid-icons/bs";
 import { createSignal, For, onCleanup, Show } from "solid-js";
 
 import Store from "../Store";
 import { api } from "../utils";
 
 function ViewRoles(props) {
-    type _Permission = {id: string, name: string, has: boolean | null};
+    type _Permission = {id: string, name: string, hasPermission: boolean | null};
 
     const store: () => Store = props.store;
-    const [roles, setRoles] = createSignal([]);
+    const [roles, setRoles] = createSignal<RoleVariantDef[]>([]);
     const [rolesEndReached, setRolesEndReached] = createSignal(false);
-    const [rolesLoading, setRolesLoading] = createSignal(false); // TODO: use this to show loading indicator
+    const [rolesLoading, setRolesLoading] = createSignal(false);
+    const [showLoading, setShowLoading] = createSignal(false);
     const [search, setSearch] = createSignal("");
     let searchTimeout: NodeJS.Timeout | null = null;
 
@@ -27,7 +30,10 @@ function ViewRoles(props) {
 
     const [editingName, setEditingName] = createSignal(false);
     const [newName, setNewName] = createSignal<string | null>(null);
+    const [editingDescription, setEditingDescription] = createSignal(false);
+    const [newDescription, setNewDescription] = createSignal<string | null>(null);
 
+    const [disableRoleCR, setDisableRoleCR] = createSignal(false);
     const [deleteRoleCR, setDeleteRoleCR] = createSignal(false);
 
     const [hasPagePermission, setHasPagePermission] = createSignal<boolean | null>(null);
@@ -37,12 +43,34 @@ function ViewRoles(props) {
     const count = 25;
 
     function refreshRoles() {
+        setRolesLoading(true); // avoid multiple requests
+
+        // only show loading indicator if loading takes longer than 100ms (avoids blinking)
+        const setLoadTimeout = setTimeout(() => {
+            setShowLoading(true);
+        }, 100);
+
+        const resetLoadTimeout = setTimeout(() => {
+            setRolesLoading(false);
+            setShowLoading(false);
+            notificationService.show({
+                status: "warning",
+                title: "Warning",
+                description: "Could not load roles."
+            });
+        }, 5 * 1000);
+
         api.post("/api/mg/roles/get", { page: page, count: count }, async res => {
+            clearTimeout(setLoadTimeout);
+            clearTimeout(resetLoadTimeout);
+            setRolesLoading(false);
+            setShowLoading(false);
+
             if (res.hasFlag(ApiResponseFlags.forbidden)) {
                 setHasPagePermission(false);
             } else {
                 setHasPagePermission(true);
-                mountScroll(); // TODO: ViewPermissions, ViewUsers, ViewRoles: do this not in here
+                mountScroll();
             }
 
             if (res.hasError()) {
@@ -72,7 +100,29 @@ function ViewRoles(props) {
             refreshRoles();
             setRolesEndReached(false);
         } else {
+            setRolesLoading(true); // avoid multiple requests
+
+            // only show loading indicator if loading takes longer than 100ms (avoids blinking)
+            const setLoadTimeout = setTimeout(() => {
+                setShowLoading(true);
+            }, 100);
+
+            const resetLoadTimeout = setTimeout(() => {
+                setRolesLoading(false);
+                setShowLoading(false);
+                notificationService.show({
+                    status: "warning",
+                    title: "Warning",
+                    description: "Could not load roles."
+                });
+            }, 5 * 1000);
+
             api.post("/api/mg/roles/search", { page: page, count: count, search: search() }, async res => {
+                clearTimeout(setLoadTimeout);
+                clearTimeout(resetLoadTimeout);
+                setRolesLoading(false);
+                setShowLoading(false);
+
                 if (res.hasError()) {
                     console.log(res.message);
                     return;
@@ -85,7 +135,7 @@ function ViewRoles(props) {
                 if (page === 0) {
                     setRoles(res.data.roles || []);
                 } else {
-                    setRoles([...roles(), ...res.data.roles || []]); // append new users to the list
+                    setRoles([...roles(), ...res.data.roles || []]); // append new roles to the list
                 }
             });
         }
@@ -127,6 +177,11 @@ function ViewRoles(props) {
         setNewName(null);
     }
 
+    function closeDescriptionEditor() {
+        setEditingDescription(false);
+        setNewDescription(null);
+    }
+
     function updateRoleList() {
         const roleIndex = roles().findIndex(role => role.id === selectedRole().id);
 
@@ -140,7 +195,7 @@ function ViewRoles(props) {
         setRoles(updatedRoles);
     }
 
-    function updateRole() {
+    function updateName() {
         api.post("/api/mg/roles/up-name", { roleId: selectedRole().id, name: newName() }, async res => {
             if (res.hasError()) {
                 notificationService.show({
@@ -162,6 +217,49 @@ function ViewRoles(props) {
         });
     }
 
+    function updateDescription() {
+        api.post("/api/mg/roles/up-description", { roleId: selectedRole().id, newDescription: newDescription() }, async res => {
+            if (res.hasError()) {
+                notificationService.show({
+                    status: "danger",
+                    title: "Error",
+                    description: res.message
+                });
+            } else {
+                notificationService.show({
+                    status: "success",
+                    title: "Success",
+                    description: "Description updated"
+                });
+
+                // nothing updated in role object
+                setNewDescription(null);
+                closeDescriptionEditor();
+            }
+        });
+    }
+
+    function toggleRoleDisable() {
+        api.post("/api/mg/roles/toggle-disable", { roleId: selectedRole().id }, async res => {
+            if (res.hasError()) {
+                notificationService.show({
+                    status: "danger",
+                    title: "Error",
+                    description: res.message
+                });
+            } else {
+                notificationService.show({
+                    status: "success",
+                    title: "Success",
+                    description: selectedRole() ? "Role enabled" : "User disabled"
+                });
+                setSelectedRole({ ...selectedRole(), disabled: !selectedRole().disabled });
+                updateRoleList();
+                setDisableRoleCR(false);
+            }
+        });
+    }
+
     function deleteRole() {
         api.post("/api/mg/roles/delete", { roleId: selectedRole().id }, async res => {
             if (res.hasError()) {
@@ -174,7 +272,7 @@ function ViewRoles(props) {
                 notificationService.show({
                     status: "success",
                     title: "Success",
-                    description: "Role deleted"
+                    description: "Roles deleted"
                 });
                 let prevRoleIndex = roles().findIndex(role => role.id === selectedRole().id) - 1;
                 if (prevRoleIndex < 0) {
@@ -196,11 +294,6 @@ function ViewRoles(props) {
             return;
         }
 
-        setRolesLoading(true);
-        setTimeout(() => {
-            setRolesLoading(false);
-        }, 150);
-
         page++;
         if (search()) {
             doSearch();
@@ -210,25 +303,37 @@ function ViewRoles(props) {
     }
 
     const minWidthForVerticalScroll = 1200;
+    let lastScrollTop: number = 0;
+    let lastScrollTopLeft: number = 0;
 
     function handleScroll() {
         const scrollContainer = document.getElementById("vu-data");
         if (scrollContainer) {
-            const { scrollTop, clientHeight, scrollWidth, scrollHeight, clientWidth } = scrollContainer;
+            const { scrollTop, scrollLeft, clientHeight, scrollWidth, scrollHeight, clientWidth } = scrollContainer;
 
             // Check the screen width using media query
             const isVerticalScroll = window.matchMedia(`(min-width: ${minWidthForVerticalScroll}px)`).matches;
 
-            if (isVerticalScroll) {
-            // Check vertical scrolling
-                if (scrollTop + clientHeight >= scrollHeight - 50) {
+            if (isVerticalScroll) { // vertical scrolling
+                if (scrollTop < lastScrollTop) { // prevent scrolling up
+                    return;
+                }
+
+                lastScrollTop = scrollTop;
+
                 // Load more items when the user is near the bottom
+                if (scrollTop + clientHeight >= scrollHeight - 50) {
                     loadMoreRoles();
                 }
-            } else {
-            // Check horizontal scrolling
-                if (clientWidth + scrollContainer.scrollLeft >= scrollWidth - 50) {
+            } else { // horizontal scrolling
+                if (scrollLeft < lastScrollTopLeft) { // prevent scrolling left
+                    return;
+                }
+
+                lastScrollTopLeft = scrollLeft;
+
                 // Load more items when the user is near the right edge
+                if (clientWidth + scrollLeft >= scrollWidth - 50) {
                     loadMoreRoles();
                 }
             }
@@ -272,55 +377,54 @@ function ViewRoles(props) {
         setSelectedRole(role);
     }
 
-    function toggleRolePermission(perm: _Permission, to: boolean | null) { // 'addRoleToUser' is declared but its value is never read. :(((((((((((
+    function toggleRolePermission(permission: _Permission, has: boolean | null) {
         setDisplayedRolePermissions(prevPerms => {
             if (prevPerms === null) {
                 return null;
             }
 
             const updatedPerms = [...prevPerms];
-            const permIndex = updatedPerms.findIndex(p => p.id === perm.id);
-            updatedPerms[permIndex].has = to;
+            const permIndex = updatedPerms.findIndex(p => p.id === permission.id);
+            updatedPerms[permIndex].hasPermission = has;
 
             return updatedPerms;
         });
     }
 
     function getPermissionStatus(permissionId: string) {
-        return displayedRolePermissions().find(perm => perm.id === permissionId).has;
+        return displayedRolePermissions().find(perm => perm.id === permissionId).hasPermission;
     }
 
     function getChangedPermissions() {
-        const selectedPermissions = selectedRolePermissions();
-        const displayedPermissions = displayedRolePermissions();
+        const selectedPerms = selectedRolePermissions();
+        const displayedPerms = displayedRolePermissions();
 
-        // Check if both arrays are non-null
-        if (selectedPermissions === null || displayedPermissions === null) {
+        if (selectedPerms === null || displayedPerms === null) {
             return [];
         }
 
         // Find roles with changes in the .has property
-        const changedPermissions = displayedPermissions.filter((displayedPerm, index) => {
-            const selectedPerm = selectedPermissions[index];
+        const changedRoles = displayedPerms.filter((displayedRole, index) => {
+            const selectedRole = selectedPerms[index];
 
             // Check if .has property has changed
-            return selectedPerm && displayedPerm && selectedPerm.has !== displayedPerm.has;
+            return selectedRole && displayedRole && selectedRole.hasPermission !== displayedRole.hasPermission;
         });
-        return changedPermissions;
+        return changedRoles;
     }
 
-    function resetChangedPermissions() {
+    function resetChangedRoles() {
         setDisplayedRolePermissions(selectedRolePermissions()?.map(role => ({...role})));
     }
 
-    function saveChangedPermissions() {
-        const changedPermissions = getChangedPermissions();
+    function saveChangedPerms() {
+        const changedPerms = getChangedPermissions();
 
-        if (changedPermissions.length === 0) {
+        if (changedPerms.length === 0) {
             return;
         }
 
-        api.post("/api/mg/roles/up-permissions", { roleId: selectedRole().id, permissions: changedPermissions.map(p => ({id: p.id, has: p.has})) }, async res => {
+        api.post("/api/mg/roles/up-perms", { roleId: selectedRole().id, perms: changedPerms.map(p => ({id: p.id, has: p.hasPermission})) }, async res => {
             if (res.hasError()) {
                 notificationService.show({
                     status: "danger",
@@ -331,17 +435,18 @@ function ViewRoles(props) {
                 notificationService.show({
                     status: "success",
                     title: "Success",
-                    description: "Roles updated"
+                    description: "Permissions updated"
                 });
-                setSelectedRolePermissions(displayedRolePermissions()?.map(perm => ({...perm})));
+                setSelectedRolePermissions(displayedRolePermissions()?.map(p => ({...p})));
             }
         });
     }
 
     return (
         <ShowIfPermission hasPermission={hasPagePermission}>
+
             <div class="ui-scroller-menu">
-                <div class="ui-scroller">
+                <div class="ui-scroller" id="u-scroll">
                     <div class="data-pin">
                         <label for="mg-search-usr">Search</label>
                         <input id="mg-search-usr" placeholder="..." onInput={e => searchRoles(e.target.value)}/>
@@ -350,28 +455,50 @@ function ViewRoles(props) {
                     <div id="vu-data" class="data-scroll">
                         <For each={roles()}>
                             {role => (
-                                <div class="ui-bg-gray5">
-                                    <button onClick={() => selectRole(role)}>
-                                        {role.name}
-                                    </button>
-                                </div>
+                                <VStack
+                                    class="ui-bg-gray5 dbg2"
+                                    role="button"
+                                    onClick={() => selectRole(role)}
+                                    justifyContent="left"
+                                    height="fit-content"
+                                    padding="$2"
+                                >
+                                    <span>{role.name}</span>
+                                    <Show when={role.disabled}>
+                                        <HStack>
+                                            <Tag cursor="default" colorScheme="danger" title="Disabled">Disabled</Tag>
+                                        </HStack>
+                                    </Show>
+                                </VStack>
                             )}
                         </For>
                     </div>
                 </div>
                 <div class="ui-scroller-content center">
-                    <Show when={selectedRole()}>
+                    <Show when={showLoading()}>
+                        <Spinner />
+                    </Show>
+                    <Show when={!showLoading() && selectedRole()}>
                         <div class="ui-modal w-40">
-                            <h1>{selectedRole().name}</h1>
+                            <VStack marginLeft="$1" width="100%" alignItems="start">
+                                <Show when={selectedRole().disabled}>
+                                    <Tag colorScheme="danger" cursor="default" title="Disabled">Disabled</Tag>
+                                </Show>
+                                <h1>{selectedRole().name}</h1>
+                                <HStack>
+                                    <Tag title="Created at" cursor="default"><div class="ui-icon me-1"><BiSolidPlusCircle size={14}/></div> {format(selectedRole().createdAt, "yyyy-MM-dd")}</Tag>
+                                    <Tag title="Modified at" cursor="default"><div class="ui-icon me-1"><BiSolidPencil size={14}/></div> {format(selectedRole().updatedAt, "yyyy-MM-dd")}</Tag>
+                                </HStack>
+                            </VStack>
                             <div class="actions">
                                 <div class="action border">
                                     <button classList={{"active": showInfo()}} onClick={toggleInfo} disabled={showInfo()}>Info</button>
-                                    <button classList={{"active": showPermissions()}} onClick={toggleInfo} disabled={showPermissions()}>Roles</button>
+                                    <button classList={{"active": showPermissions()}} onClick={toggleInfo} disabled={showPermissions()}>Permissions</button>
                                 </div>
                                 <Show when={showInfo()}>
-                                    <label for="mg-roles-name">Username</label>
+                                    <label for="mg-role-name">Name</label>
                                     <div class="action border">
-                                        <input id="mg-roles-name" placeholder={selectedRole().name} disabled/>
+                                        <input id="mg-role-name" value={selectedRole().name} disabled/>
                                         <button
                                             type="button"
                                             class="bg-info ui-icon w-20"
@@ -381,7 +508,7 @@ function ViewRoles(props) {
                                         >
                                             <div><BiSolidPencil size={15} color="#ffffff"/></div>
                                         </button>
-                                        <Modal opened={editingName()} onClose={closeNameEditor} initialFocus="#mg-roles-new-name">
+                                        <Modal opened={editingName()} onClose={closeNameEditor} initialFocus="#mg-role-new-name">
                                             <ModalOverlay />
                                             <ModalContent>
                                                 <ModalCloseButton />
@@ -389,15 +516,63 @@ function ViewRoles(props) {
                                                 <ModalBody>
                                                     <FormControl mb="$4">
                                                         <FormLabel>Name</FormLabel>
-                                                        <Input id="mg-roles-new-name" type="text" placeholder="Enter new name" autocomplete="off" spellcheck={false} onChange={e => setNewName(e.target.value)}/>
+                                                        <Input id="mg-role-new-name" type="text" placeholder="Enter new name" autocomplete="off" spellcheck={false} onChange={e => setNewName(e.target.value)}/>
                                                     </FormControl>
                                                 </ModalBody>
                                                 <ModalFooter>
-                                                    <Button onClick={updateRole}>Update</Button>
-                                                    <Button id="mg-roles-new-name-cancel" onClick={closeNameEditor} ms="auto" colorScheme={"primary"}>Cancel</Button>
+                                                    <Button onClick={updateName}>Update</Button>
+                                                    <Button id="mg-role-new-name-cancel" onClick={closeNameEditor} ms="auto" colorScheme={"primary"}>Cancel</Button>
                                                 </ModalFooter>
                                             </ModalContent>
                                         </Modal>
+                                    </div>
+
+                                    <label for="mg-role-description">Description</label>
+                                    <div class="action border">
+                                        <Textarea id="mg-role-description" value={selectedRole().description} size="lg" onChange={e => setNewDescription(e.target.value)} disabled/>
+                                        <button
+                                            type="button"
+                                            class="bg-info ui-icon w-20"
+                                            onClick={() => setEditingDescription(true)}
+                                            title={!hasPermission({name: "Admin.Edit.Role.Description"}) ? "You don't have the permission to do that!" : ""}
+                                            disabled={!hasPermission({name: "Admin.Edit.Role.Description"})}
+                                        >
+                                            <div><BiSolidPencil size={15} color="#ffffff"/></div>
+                                        </button>
+                                        <Modal opened={editingDescription()} onClose={closeNameEditor} initialFocus="#mg-role-new-description">
+                                            <ModalOverlay />
+                                            <ModalContent>
+                                                <ModalCloseButton />
+                                                <ModalHeader>Edit Description</ModalHeader>
+                                                <ModalBody>
+                                                    <FormControl mb="$4">
+                                                        <FormLabel>Description</FormLabel>
+                                                        <Textarea id="mg-role-new-description" placeholder="Enter new description" size="lg" onChange={e => setNewDescription(e.target.value)}/>
+                                                    </FormControl>
+                                                </ModalBody>
+                                                <ModalFooter>
+                                                    <Button onClick={updateDescription}>Update</Button>
+                                                    <Button id="mg-role-new-description-cancel" onClick={closeDescriptionEditor} ms="auto" colorScheme={"primary"}>Cancel</Button>
+                                                </ModalFooter>
+                                            </ModalContent>
+                                        </Modal>
+                                    </div>
+                                    <div class="action bg-danger">
+                                        <button
+                                            type="button"
+                                            title={!hasPermission({name: "Admin.Edit.Role.Disable"}) ? "You don't have the permission to do that!" : ""}
+                                            disabled={!hasPermission({name: "Admin.Edit.Role.Disable"})}
+                                            onClick={() => setDisableRoleCR(true)}
+                                        >
+                                            <Show when={!selectedRole().disabled}
+                                                fallback="Enable"
+                                            >
+                                                Disable
+                                            </Show>
+                                        </button>
+                                        <ModalConfirmation isOpen={disableRoleCR} onCancel={() => setDisableRoleCR(false)} onConfirm={toggleRoleDisable} title="Confirmation required">
+                                            <p>Are you sure you want to {selectedRole().disabled ? "enable" : "disable"} {selectedRole().name}</p>
+                                        </ModalConfirmation>
                                     </div>
                                     <div class="action bg-danger">
                                         <button
@@ -418,19 +593,14 @@ function ViewRoles(props) {
                                     <div class="ui-scroller w-100 mt-2" style={{"max-height": "250px"}}>
                                         <For each={displayedRolePermissions()}>
                                             {perm => (
-                                                <div class="ui-bg-gray4 action">
-                                                    <button
-                                                        type="button"
-                                                        disabled={!hasPermission({name: "Admin.Edit.Roles.Permissions"})}
-                                                    >
-                                                        {perm.name}
-                                                    </button>
+                                                <div class="action border border-center">
+                                                    <input value={perm.name} disabled style={{border: "none"}}/>
                                                     <button
                                                         class="ui-icon w-20"
                                                         classList={{
-                                                            "bg-success": getPermissionStatus(perm.id)
+                                                            "bg-success": getPermissionStatus(perm.id) === true
                                                         }}
-                                                        disabled={!(hasPermission({name: "Admin.Edit.Roles.Permissions"}) && getPermissionStatus(perm.id) !== true)}
+                                                        disabled={!(hasPermission({name: "Admin.Edit.Role.Permissions"}) && (getPermissionStatus(perm.id) !== true))}
                                                         onClick={() => toggleRolePermission(perm, true)}
                                                     >
                                                         <div><BiRegularCheck size={15} color="#ffffff"/></div>
@@ -438,19 +608,19 @@ function ViewRoles(props) {
                                                     <button
                                                         class="ui-icon w-20"
                                                         classList={{
-                                                            "bg-success": getPermissionStatus(perm.id)
+                                                            "bg-warning": getPermissionStatus(perm.id) === null
                                                         }}
-                                                        disabled={!(hasPermission("Admin.Edit.Roles.Permissions") && getPermissionStatus(perm.id) !== null)}
+                                                        disabled={!(hasPermission({name: "Admin.Edit.Role.Permissions"}) && (getPermissionStatus(perm.id) !== null))}
                                                         onClick={() => toggleRolePermission(perm, null)}
                                                     >
-                                                        <div><BiRegularQuestionMark size={15} color="#ffffff"/></div>
+                                                        <div><BsSlash size={15} color="#ffffff"/></div>
                                                     </button>
                                                     <button
                                                         class="ui-icon w-20"
                                                         classList={{
-                                                            "bg-danger": !getPermissionStatus(perm.id)
+                                                            "bg-danger": getPermissionStatus(perm.id) === false
                                                         }}
-                                                        disabled={!(hasPermission("Admin.Edit.Roles.Permissions") && getPermissionStatus(perm.id) !== false)}
+                                                        disabled={!(hasPermission({name: "Admin.Edit.Role.Permissions"}) && (getPermissionStatus(perm.id) !== false))}
                                                         onClick={() => toggleRolePermission(perm, false)}
                                                     >
                                                         <div><BiRegularX size={15} color="#ffffff"/></div>
@@ -459,22 +629,22 @@ function ViewRoles(props) {
                                             )}
                                         </For>
                                     </div>
-                                    <div class="action">
+                                    <div class="action border-center">
                                         <button
                                             type="button"
                                             class="bg-info"
-                                            title={!hasPermission("Admin.Edit.Roles.Permissions") ? "You don't have the permission to do that!" : ""}
-                                            disabled={!(hasPermission("Admin.Edit.Roles.Permissions") && (getChangedPermissions()?.length || 0) > 0)}
-                                            onClick={() => resetChangedPermissions()}
+                                            title={!hasPermission({name: "Admin.Edit.User.Roles"}) ? "You don't have the permission to do that!" : ""}
+                                            disabled={!(hasPermission({name: "Admin.Edit.User.Roles"}) && (getChangedPermissions()?.length || 0) > 0)}
+                                            onClick={() => resetChangedRoles()}
                                         >
                                             Reset
                                         </button>
                                         <button
                                             type="button"
                                             class="bg-info"
-                                            title={!hasPermission("Admin.Edit.Roles.Permissions") ? "You don't have the permission to do that!" : ""}
-                                            disabled={!(hasPermission("Admin.Edit.Roles.Permissions") && (getChangedPermissions()?.length || 0) > 0)}
-                                            onClick={() => saveChangedPermissions()}
+                                            title={!hasPermission({name: "Admin.Edit.User.Roles"}) ? "You don't have the permission to do that!" : ""}
+                                            disabled={!(hasPermission({name: "Admin.Edit.User.Roles"}) && (getChangedPermissions()?.length || 0) > 0)}
+                                            onClick={() => saveChangedPerms()}
                                         >
                                             Save
                                         </button>

@@ -11,6 +11,9 @@ export interface PermissionNormal extends IdBase {
 export interface RoleNormal extends IdBase {
     name: string;
 }
+export interface RolePermissionNormal extends PermissionNormal {
+    hasPermission: boolean | null;
+}
 
 export interface UserVariantDef extends UserNormal {
     email: string;
@@ -28,6 +31,8 @@ export interface PermissionVariantDef extends PermissionNormal {
 }
 export interface RoleVariantDef extends RoleNormal {
     description: string;
+    disabled: boolean;
+    requiresMfa: boolean;
     createdAt: number;
     updatedAt: number;
 }

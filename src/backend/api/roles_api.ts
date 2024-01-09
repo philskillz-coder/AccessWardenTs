@@ -1,7 +1,7 @@
 import { AppDataSource } from "backend/database/data-source";
 import { Permission, Role, User } from "backend/database/entity";
 import { PagePermissions } from "backend/database/required-data";
-import { serializePermissionNormal, serializeRoleVariantDef } from "backend/database/serializer";
+import { serializeRolePermissionNormal, serializeRoleVariantDef } from "backend/database/serializer";
 import { CRequest } from "backend/express";
 import hashidService from "backend/services/HashidService";
 import { getUserPermissions, hasPermissionsFrom, PermIdComp, PermNameComp } from "backend/services/PermissionsService";
@@ -53,10 +53,11 @@ RolesRouter.post("/mg/roles/get-all-permissions", ensureAuthenticated, requirePe
         return;
     }
 
+    // return all permissions that exist
     res.json({
         status: "success",
         data: {
-            roles: role.rolePermissions.map(rolePerm => serializePermissionNormal(rolePerm.permission))
+            permissions: role.rolePermissions.map(rolePerm => serializeRolePermissionNormal(rolePerm))
         }
     });
 });

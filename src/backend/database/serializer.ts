@@ -1,7 +1,7 @@
-import { IdBase, PermissionNormal, PermissionVariantDef, RoleNormal, RoleVariantDef, UserNormal, UserVariantDef, UserVariantP, UserVariantR } from "@typings";
+import { IdBase, PermissionNormal, PermissionVariantDef, RoleNormal, RolePermissionNormal, RoleVariantDef, UserNormal, UserVariantDef, UserVariantP, UserVariantR } from "@typings";
 import hashidService from "backend/services/HashidService";
 
-import { Permission, Role, User } from "./entity";
+import { Permission, Role, RolePermission, User } from "./entity";
 
 export function serializeUserBase(user: User): IdBase {
     return {
@@ -29,6 +29,13 @@ export function serializePermissionNormal(permission: Permission) : PermissionNo
     return {
         id: hashidService.permissions.encode(permission.id),
         name: permission.name,
+    };
+}
+export function serializeRolePermissionNormal(rolePermission: RolePermission) : RolePermissionNormal {
+    return {
+        id: hashidService.permissions.encode(rolePermission.permission.id),
+        name: rolePermission.permission.name,
+        hasPermission: rolePermission.hasPermission
     };
 }
 export function serializeRoleNormal(role: Role) : RoleNormal {
@@ -65,6 +72,8 @@ export function serializeRoleVariantDef(role: Role) : RoleVariantDef {
         id: hashidService.roles.encode(role.id),
         name: role.name,
         description: role.description,
+        disabled: role.disabled,
+        requiresMfa: role.requiresMfa,
         createdAt: role.createdAt.getTime(),
         updatedAt: role.updatedAt.getTime()
     };

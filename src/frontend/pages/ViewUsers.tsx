@@ -543,7 +543,7 @@ function ViewUsers(props) {
                                     height="fit-content"
                                     padding="$2"
                                 >
-                                    <Avatar src={avUrl(user)} size="md" />
+                                    <Avatar src={avUrl(user)} name={user.username} size="md" />
                                     <VStack marginLeft="$1" width="100%" alignItems="start">
                                         <span>{user.username}</span>
                                         <span>{user.email}</span>
@@ -571,7 +571,7 @@ function ViewUsers(props) {
                     <Show when={!showLoading() && selectedUser()}>
                         <div class="ui-modal w-40">
                             <HStack>
-                                <Avatar src={avUrl(selectedUser())} size="md" />
+                                <Avatar src={avUrl(selectedUser())} name={selectedUser().username} size="md" />
                                 <VStack marginLeft="$1" width="100%" alignItems="start">
                                     <Show when={selectedUser().suspended}>
                                         <Tag colorScheme="danger" cursor="default" title="Suspended">Suspended</Tag>

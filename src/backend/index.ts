@@ -24,7 +24,18 @@ dotenv.config();
 
 const app = express();
 app.use(bodyParser.json());
-app.use(cors());
+// Erlaube CORS für mehrere Ursprungs-URLs
+app.use(cors({
+    origin: [
+        "http://localhost",
+        "http://localhost:3000",
+        "http://localhost:5050",
+        "https://cmhp8ls7-5050.euw.devtunnels.ms",
+        "https://cmhp8ls7-5050.euw.devtunnels.ms:3000",
+        "https://cmhp8ls7-5050.euw.devtunnels.ms:5050"
+    ],
+    optionsSuccessStatus: 200
+}));
 app.use(cookieParser());
 app.use(session({
     secret: process.env.SESSION_SECRET,

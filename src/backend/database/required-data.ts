@@ -32,6 +32,7 @@ export enum PagePermissions {
     AdminEditRoleName = "Admin.Edit.Role.Name",
     AdminEditRoleDescription = "Admin.Edit.Role.Description",
     AdminEditRolePermissions = "Admin.Edit.Role.Permissions",
+    AdminEditRoleDisable = "Admin.Edit.Role.Disable",
     AdminEditRoleDelete = "Admin.Edit.Role.Delete",
 
     AdminEditPermissionName = "Admin.Edit.Permission.Name",
