@@ -113,7 +113,6 @@ button, input {
 
     &:not(:disabled) {
         &:hover {
-            cursor: pointer;
             filter: brightness(85%);
         }
     }
@@ -125,6 +124,12 @@ button {
         
         &:hover {
             cursor: default;
+        }
+    }
+
+    &:not(:disabled) {
+        &:hover {
+            cursor: pointer;
         }
     }
 }

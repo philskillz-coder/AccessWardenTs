@@ -87,15 +87,10 @@ export const isDev = process.argv.find(arg => arg === "--dev") !== undefined || 
 logger.info(`Running in ${isDev ? "development" : "production"} mode`);
 
 const distFolder = isDev ? path.join(__dirname, "..", "..", "public") : path.join(__dirname, "..", "..", "dist");
-// const ensureAuthenticated = (req, res, next) => {
-//     if (req.isAuthenticated()) return next();
-//     res.redirect("/api/auth");
-// };
-app.use(express.static(distFolder));
-// app.get("*", (req, res) => {
-//     res.sendFile(path.join(distFolder, "index.html"));
-// });
-// app.get("/", ensureAuthenticated, (req, res) => res.sendFile(path.join(distFolder, "index.html")));
+// app.use(express.static(distFolder));
+app.get("*", (req, res) => {
+    res.sendFile(path.join(distFolder, "index.html"));
+});
 
 
 const redisClient = createClient({
