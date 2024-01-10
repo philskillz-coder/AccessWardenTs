@@ -739,34 +739,36 @@ function ViewUsers(props) {
                                 </Show>
 
                                 <Show when={showRoles()}>
-                                    <div class="ui-scroller w-100 mt-2" style={{"max-height": "250px"}}>
-                                        <For each={displayedUserRoles()}>
-                                            {role => (
-                                                <div class="action border border-center">
-                                                    <input value={role.name} disabled style={{border: "none"}}/>
-                                                    <button
-                                                        class="ui-icon w-20"
-                                                        classList={{
-                                                            "bg-success": getRoleStatus(role.id)
-                                                        }}
-                                                        disabled={!(hasPermission({name: "Admin.Edit.User.Roles"}) && !getRoleStatus(role.id))}
-                                                        onClick={() => toggleUserRole(role)}
-                                                    >
-                                                        <div><BiRegularCheck size={15} color="#ffffff"/></div>
-                                                    </button>
-                                                    <button
-                                                        class="ui-icon w-20"
-                                                        classList={{
-                                                            "bg-danger": !getRoleStatus(role.id)
-                                                        }}
-                                                        disabled={!(hasPermission({name: "Admin.Edit.User.Roles"}) && getRoleStatus(role.id))}
-                                                        onClick={() => toggleUserRole(role)}
-                                                    >
-                                                        <div><BiRegularX size={15} color="#ffffff"/></div>
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </For>
+                                    <div class="ui-scroller-h w-100 mt-2" style={{"max-height": "250px"}}>
+                                        <div class="scroll-data">
+                                            <For each={displayedUserRoles()}>
+                                                {role => (
+                                                    <div class="action border border-center">
+                                                        <input value={role.name} disabled style={{border: "none"}}/>
+                                                        <button
+                                                            class="ui-icon w-20"
+                                                            classList={{
+                                                                "bg-success": getRoleStatus(role.id) === true
+                                                            }}
+                                                            disabled={!(hasPermission({name: "Admin.Edit.User.Roles"}) && getRoleStatus(role.id) !== true)}
+                                                            onClick={() => toggleUserRole(role)}
+                                                        >
+                                                            <div><BiRegularCheck size={15} color="#ffffff"/></div>
+                                                        </button>
+                                                        <button
+                                                            class="ui-icon w-20"
+                                                            classList={{
+                                                                "bg-danger": getRoleStatus(role.id) === false
+                                                            }}
+                                                            disabled={!(hasPermission({name: "Admin.Edit.User.Roles"}) && getRoleStatus(role.id) !== false)}
+                                                            onClick={() => toggleUserRole(role)}
+                                                        >
+                                                            <div><BiRegularX size={15} color="#ffffff"/></div>
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </For>
+                                        </div>
                                     </div>
                                     <div class="action border-center">
                                         <button

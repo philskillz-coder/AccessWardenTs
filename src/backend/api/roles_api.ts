@@ -1,7 +1,7 @@
 import { AppDataSource } from "backend/database/data-source";
 import { Permission, Role, User } from "backend/database/entity";
 import { PagePermissions } from "backend/database/required-data";
-import { serializeRolePermissionNormal, serializeRoleVariantDef } from "backend/database/serializer";
+import { serializePermissionNormal, serializeRolePermissionNormal, serializeRoleVariantDef } from "backend/database/serializer";
 import { CRequest } from "backend/express";
 import hashidService from "backend/services/HashidService";
 import { getUserPermissions, hasPermissionsFrom, PermIdComp, PermNameComp } from "backend/services/PermissionsService";
@@ -9,6 +9,7 @@ import { Router } from "express";
 import { ILike } from "typeorm";
 
 import { ensureAuthenticated, parseNumber, requirePermissions, targetRoleValid } from "./tools";
+import { RolePermissionNormal } from "@typings";
 const RolesRouter = Router();
 
 RolesRouter.post("/mg/roles/get", ensureAuthenticated, requirePermissions(
@@ -53,11 +54,17 @@ RolesRouter.post("/mg/roles/get-all-permissions", ensureAuthenticated, requirePe
         return;
     }
 
+    const allPermissions = await AppDataSource.getRepository(Permission).find();
+    const permissions = allPermissions.map(perm => ({
+        ...serializePermissionNormal(perm),
+        hasPermission: role.rolePermissions.find(rp => rp.permission.id === perm.id)?.hasPermission ?? null
+    }));
+
     // return all permissions that exist
     res.json({
         status: "success",
         data: {
-            permissions: role.rolePermissions.map(rolePerm => serializeRolePermissionNormal(rolePerm))
+            permissions: permissions
         }
     });
 });

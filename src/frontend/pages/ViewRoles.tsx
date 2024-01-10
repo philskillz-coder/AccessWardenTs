@@ -167,7 +167,7 @@ function ViewRoles(props) {
                 });
             } else {
                 setSelectedRolePermissions(res.data.permissions);
-                setDisplayedRolePermissions(res.data.permissions.map(role => ({...role})));
+                setDisplayedRolePermissions(res.data.permissions.map(perm => ({...perm})));
             }
         });
     }
@@ -392,7 +392,8 @@ function ViewRoles(props) {
     }
 
     function getPermissionStatus(permissionId: string) {
-        return displayedRolePermissions().find(perm => perm.id === permissionId).hasPermission;
+        const perm = displayedRolePermissions().find(perm => perm.id === permissionId);
+        return perm.hasPermission;
     }
 
     function getChangedPermissions() {
@@ -414,7 +415,7 @@ function ViewRoles(props) {
     }
 
     function resetChangedRoles() {
-        setDisplayedRolePermissions(selectedRolePermissions()?.map(role => ({...role})));
+        setDisplayedRolePermissions(selectedRolePermissions()?.map(perm => ({...perm})));
     }
 
     function saveChangedPerms() {
@@ -480,7 +481,7 @@ function ViewRoles(props) {
                     </Show>
                     <Show when={!showLoading() && selectedRole()}>
                         <div class="ui-modal w-40">
-                            <VStack marginLeft="$1" width="100%" alignItems="start">
+                            <VStack width="100%" alignItems="start">
                                 <Show when={selectedRole().disabled}>
                                     <Tag colorScheme="danger" cursor="default" title="Disabled">Disabled</Tag>
                                 </Show>
@@ -528,11 +529,12 @@ function ViewRoles(props) {
                                     </div>
 
                                     <label for="mg-role-description">Description</label>
-                                    <div class="action border">
+                                    <div class="action border" style={{height: "unset"}}>
                                         <Textarea id="mg-role-description" value={selectedRole().description} size="lg" onChange={e => setNewDescription(e.target.value)} disabled/>
                                         <button
                                             type="button"
                                             class="bg-info ui-icon w-20"
+                                            style={{height: "unset"}}
                                             onClick={() => setEditingDescription(true)}
                                             title={!hasPermission({name: "Admin.Edit.Role.Description"}) ? "You don't have the permission to do that!" : ""}
                                             disabled={!hasPermission({name: "Admin.Edit.Role.Description"})}
@@ -590,44 +592,46 @@ function ViewRoles(props) {
                                 </Show>
 
                                 <Show when={showPermissions()}>
-                                    <div class="ui-scroller w-100 mt-2" style={{"max-height": "250px"}}>
-                                        <For each={displayedRolePermissions()}>
-                                            {perm => (
-                                                <div class="action border border-center">
-                                                    <input value={perm.name} disabled style={{border: "none"}}/>
-                                                    <button
-                                                        class="ui-icon w-20"
-                                                        classList={{
-                                                            "bg-success": getPermissionStatus(perm.id) === true
-                                                        }}
-                                                        disabled={!(hasPermission({name: "Admin.Edit.Role.Permissions"}) && (getPermissionStatus(perm.id) !== true))}
-                                                        onClick={() => toggleRolePermission(perm, true)}
-                                                    >
-                                                        <div><BiRegularCheck size={15} color="#ffffff"/></div>
-                                                    </button>
-                                                    <button
-                                                        class="ui-icon w-20"
-                                                        classList={{
-                                                            "bg-warning": getPermissionStatus(perm.id) === null
-                                                        }}
-                                                        disabled={!(hasPermission({name: "Admin.Edit.Role.Permissions"}) && (getPermissionStatus(perm.id) !== null))}
-                                                        onClick={() => toggleRolePermission(perm, null)}
-                                                    >
-                                                        <div><BsSlash size={15} color="#ffffff"/></div>
-                                                    </button>
-                                                    <button
-                                                        class="ui-icon w-20"
-                                                        classList={{
-                                                            "bg-danger": getPermissionStatus(perm.id) === false
-                                                        }}
-                                                        disabled={!(hasPermission({name: "Admin.Edit.Role.Permissions"}) && (getPermissionStatus(perm.id) !== false))}
-                                                        onClick={() => toggleRolePermission(perm, false)}
-                                                    >
-                                                        <div><BiRegularX size={15} color="#ffffff"/></div>
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </For>
+                                    <div class="ui-scroller-h w-100 mt-2" style={{"max-height": "250px"}}>
+                                        <div class="data-scroll">
+                                            <For each={displayedRolePermissions()}>
+                                                {perm => (
+                                                    <div class="action border border-center">
+                                                        <input value={perm.name} disabled style={{border: "none"}}/>
+                                                        <button
+                                                            class="ui-icon w-20"
+                                                            classList={{
+                                                                "bg-success": getPermissionStatus(perm.id) === true
+                                                            }}
+                                                            disabled={!(hasPermission({name: "Admin.Edit.Role.Permissions"}) && (getPermissionStatus(perm.id) !== true))}
+                                                            onClick={() => toggleRolePermission(perm, true)}
+                                                        >
+                                                            <div><BiRegularCheck size={15} color="#ffffff"/></div>
+                                                        </button>
+                                                        <button
+                                                            class="ui-icon w-20"
+                                                            classList={{
+                                                                "bg-warning": getPermissionStatus(perm.id) === null
+                                                            }}
+                                                            disabled={!(hasPermission({name: "Admin.Edit.Role.Permissions"}) && (getPermissionStatus(perm.id) !== null))}
+                                                            onClick={() => toggleRolePermission(perm, null)}
+                                                        >
+                                                            <div><BsSlash size={15} color="#ffffff"/></div>
+                                                        </button>
+                                                        <button
+                                                            class="ui-icon w-20"
+                                                            classList={{
+                                                                "bg-danger": getPermissionStatus(perm.id) === false
+                                                            }}
+                                                            disabled={!(hasPermission({name: "Admin.Edit.Role.Permissions"}) && (getPermissionStatus(perm.id) !== false))}
+                                                            onClick={() => toggleRolePermission(perm, false)}
+                                                        >
+                                                            <div><BiRegularX size={15} color="#ffffff"/></div>
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </For>
+                                        </div>
                                     </div>
                                     <div class="action border-center">
                                         <button

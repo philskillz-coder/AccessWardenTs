@@ -66,9 +66,9 @@ const Login = props => {
                     <div class="action border">
                         <input type="text" id="login-username" placeholder="Username or Email Address" autocomplete="username" onChange={e => setUsername(e.target.value)} />
                     </div>
-                    <div class="action border">
+                    <div class="action border border-center">
                         <input type={showPassword() ? "text" : "password"} id="login-password" placeholder="Password" autocomplete="current-password" onChange={e => setPassword(e.target.value)} />
-                        <button type="button" class="ui-icon w-20" style={{ border: "1px solid var(--gray2)", "border-left": "none"}} onClick={() => setShowPassword(!showPassword())}>
+                        <button type="button" class="ui-icon w-20" onClick={() => setShowPassword(!showPassword())}>
                             <div>
                                 <Show when={!showPassword()}>
                                     <BsEye size={15} color="#ffffff" />
