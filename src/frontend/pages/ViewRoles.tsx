@@ -218,7 +218,7 @@ function ViewRoles(props) {
     }
 
     function updateDescription() {
-        api.post("/api/mg/roles/up-description", { roleId: selectedRole().id, newDescription: newDescription() }, async res => {
+        api.post("/api/mg/roles/up-description", { roleId: selectedRole().id, description: newDescription() }, async res => {
             if (res.hasError()) {
                 notificationService.show({
                     status: "danger",
@@ -425,7 +425,11 @@ function ViewRoles(props) {
             return;
         }
 
-        api.post("/api/mg/roles/up-perms", { roleId: selectedRole().id, perms: changedPerms.map(p => ({id: p.id, has: p.hasPermission})) }, async res => {
+        api.post("/api/mg/roles/up-permissions", {
+            roleId: selectedRole().id,
+            permissions: changedPerms.map(p => ({id: p.id, hasPermission: p.hasPermission}))
+        },
+        async res => {
             if (res.hasError()) {
                 notificationService.show({
                     status: "danger",
@@ -468,6 +472,9 @@ function ViewRoles(props) {
                                     <Show when={role.disabled}>
                                         <HStack>
                                             <Tag cursor="default" colorScheme="danger" title="Disabled">Disabled</Tag>
+                                        </HStack>
+                                        <HStack>
+                                            <Tag cursor="default" colorScheme="warning" title="MFA Required">MFA Required</Tag>
                                         </HStack>
                                     </Show>
                                 </VStack>
@@ -530,7 +537,14 @@ function ViewRoles(props) {
 
                                     <label for="mg-role-description">Description</label>
                                     <div class="action border" style={{height: "unset"}}>
-                                        <Textarea id="mg-role-description" value={selectedRole().description} size="lg" onChange={e => setNewDescription(e.target.value)} disabled/>
+                                        <Textarea
+                                            id="mg-role-description"
+                                            value={selectedRole().description}
+                                            size="lg"
+                                            fontSize={14}
+                                            onChange={e => setNewDescription(e.target.value)}
+                                            readonly
+                                        />
                                         <button
                                             type="button"
                                             class="bg-info ui-icon w-20"
@@ -541,7 +555,7 @@ function ViewRoles(props) {
                                         >
                                             <div><BiSolidPencil size={15} color="#ffffff"/></div>
                                         </button>
-                                        <Modal opened={editingDescription()} onClose={closeNameEditor} initialFocus="#mg-role-new-description">
+                                        <Modal opened={editingDescription()} onClose={closeDescriptionEditor} initialFocus="#mg-role-new-description">
                                             <ModalOverlay />
                                             <ModalContent>
                                                 <ModalCloseButton />
@@ -549,7 +563,12 @@ function ViewRoles(props) {
                                                 <ModalBody>
                                                     <FormControl mb="$4">
                                                         <FormLabel>Description</FormLabel>
-                                                        <Textarea id="mg-role-new-description" placeholder="Enter new description" size="lg" onChange={e => setNewDescription(e.target.value)}/>
+                                                        <Textarea
+                                                            id="mg-role-new-description"
+                                                            placeholder="Enter new description"
+                                                            size="lg"
+                                                            onChange={e => setNewDescription(e.target.value)}
+                                                        />
                                                     </FormControl>
                                                 </ModalBody>
                                                 <ModalFooter>

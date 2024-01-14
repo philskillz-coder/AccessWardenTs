@@ -5,7 +5,7 @@
     "lint": "eslint \"**/*.ts\" \"**/*.tsx\"",
     "lint:fix": "eslint \"**/*.ts\" \"**/*.tsx\" --fix",
     "serve": "ts-node -r tsconfig-paths/register src/backend/index.ts",
-    "typeorm": "npx typeorm-ts-node-commonjs --dataSource src/data-source.ts",
+    "typeorm": "npx typeorm-ts-node-commonjs --dataSource src\\backend\\database\\data-source.ts",
     "typeorm:migrate": "npx typeorm-ts-node-commonjs migration:run -d src\\backend\\database\\data-source.ts",
     "typeorm:create": "npx typeorm-ts-node-commonjs migration:create src\\backend\\database\\migration\\migration --timestamp",
     "typeorm:generate": "npx typeorm-ts-node-commonjs migration:generate -d src\\backend\\database\\data-source.ts src\\backend\\database\\migration\\migration --timestamp",

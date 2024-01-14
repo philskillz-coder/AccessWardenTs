@@ -31,8 +31,9 @@ export interface PermissionVariantDef extends PermissionNormal {
 }
 export interface RoleVariantDef extends RoleNormal {
     description: string;
-    disabled: boolean;
     requiresMfa: boolean;
+    isDefault: boolean;
+    disabled: boolean;
     createdAt: number;
     updatedAt: number;
 }

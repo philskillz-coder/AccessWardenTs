@@ -74,6 +74,7 @@ export function serializeRoleVariantDef(role: Role) : RoleVariantDef {
         description: role.description,
         disabled: role.disabled,
         requiresMfa: role.requiresMfa,
+        isDefault: role.isDefault,
         createdAt: role.createdAt.getTime(),
         updatedAt: role.updatedAt.getTime()
     };

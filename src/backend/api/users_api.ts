@@ -109,15 +109,12 @@ UsersRouter.post("/mg/users/get-all-roles", ensureAuthenticated, requirePermissi
     }
 
     // required for returning all roles no matter if the user has them or not
-    const roles = await AppDataSource.getRepository(Role).find(
-        {
-            relations: ["rolePermissions", "rolePermissions.permission"],
-            order: {
-                power: "DESC",
-                name: "ASC"
-            }
+    const roles = await AppDataSource.getRepository(Role).find({
+        order: {
+            power: "DESC",
+            // name: "ASC"
         }
-    );
+    });
 
     const userRoles = roles.map(role => ({
         ...serializeRoleNormal(role),
@@ -127,6 +124,7 @@ UsersRouter.post("/mg/users/get-all-roles", ensureAuthenticated, requirePermissi
     res.json({
         status: "success",
         data: {
+            userRoles: user.roles.map(serializeRoleNormal),
             roles: userRoles
         }
     });
@@ -362,6 +360,7 @@ UsersRouter.post("/mg/users/toggle-suspension", ensureAuthenticated, requirePerm
     });
 });
 
+// TODO: refactor
 UsersRouter.post("/mg/users/up-roles", ensureAuthenticated, requirePermissions(
     PermNameComp, PagePermissions.AdminEditUserRoles
 ), targetUserNotAdmin, async (req: CRequest, res) => {
@@ -399,8 +398,10 @@ UsersRouter.post("/mg/users/up-roles", ensureAuthenticated, requirePermissions(
         ...role,
         id: hashidService.roles.decodeSingle(role.id)
     }));
+    console.log("Edited roles", editedRoles);
 
     const allRoles = await AppDataSource.getRepository(Role).find();
+    console.log("All roles", allRoles);
     const newRoles = [];
 
     // TODO: check if this works
@@ -410,20 +411,39 @@ UsersRouter.post("/mg/users/up-roles", ensureAuthenticated, requirePermissions(
         const editedRole = editedRoles.find(r => r.id === role.id);
 
         if (editedRole !== undefined && role.power < requesterTopPower) { // if the role has fewer power than the users top role: allow
-            newRoles.push({...role, has: editedRole.has});
+            console.log("Role has fewer power than the users top role: allow");
+            if (editedRole.has) {
+                newRoles.push(role);
+                console.log("Role has been added");
+            } else {
+                console.log("Role has been removed");
+            }
         } else {
+            console.log("Role has more power than the users top role: deny");
             const _role = user.roles.find(r => r.id === role.id);
             if (_role) {
                 newRoles.push(role);
             }
         }
     });
+    console.log("New roles", newRoles);
 
     user.roles = newRoles;
     await AppDataSource.getRepository(User).save(user);
+    const __user = await AppDataSource.getRepository(User).findOne({
+        where: {
+            id: userId
+        },
+        relations: ["roles"]
+    });
     res.json({
         status: "success",
-        message: "Roles updated"
+        message: "Roles updated",
+        data: {
+            newRoles: newRoles.map(serializeRoleNormal),
+            objRoles: user.roles.map(serializeRoleNormal),
+            actualRoles: __user.roles.map(serializeRoleNormal)
+        }
     });
 });
 

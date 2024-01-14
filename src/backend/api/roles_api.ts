@@ -1,15 +1,14 @@
 import { AppDataSource } from "backend/database/data-source";
-import { Permission, Role, User } from "backend/database/entity";
+import { Permission, Role, RolePermission, User } from "backend/database/entity";
 import { PagePermissions } from "backend/database/required-data";
-import { serializePermissionNormal, serializeRolePermissionNormal, serializeRoleVariantDef } from "backend/database/serializer";
+import { serializePermissionNormal, serializeRoleVariantDef } from "backend/database/serializer";
 import { CRequest } from "backend/express";
 import hashidService from "backend/services/HashidService";
 import { getUserPermissions, hasPermissionsFrom, PermIdComp, PermNameComp } from "backend/services/PermissionsService";
 import { Router } from "express";
 import { ILike } from "typeorm";
 
-import { ensureAuthenticated, parseNumber, requirePermissions, targetRoleValid } from "./tools";
-import { RolePermissionNormal } from "@typings";
+import { ensureAuthenticated, parseNumber, requirePermissions, targetRoleValid, validateMfaToken } from "./tools";
 const RolesRouter = Router();
 
 RolesRouter.post("/mg/roles/get", ensureAuthenticated, requirePermissions(
@@ -168,6 +167,214 @@ RolesRouter.post("/mg/roles/up-name", ensureAuthenticated, requirePermissions(
     });
 });
 
+RolesRouter.post("/mg/roles/up-description", ensureAuthenticated, requirePermissions(
+    PermNameComp, PagePermissions.AdminEditRoleDescription
+), targetRoleValid, async (req: CRequest, res) => {
+    if (req.body.description === undefined || req.body.description === null) {
+        res.status(400).json({
+            status: "error",
+            message: "Missing Data"
+        });
+        return;
+    }
+
+    const roleId = hashidService.roles.decodeSingle(req.body.roleId);
+    const role = await AppDataSource.getRepository(Role).findOne({
+        where: {
+            id: roleId
+        }
+    });
+
+    const requester = await AppDataSource.getRepository(User).findOne({
+        where: {
+            id: (<User>req.user).id
+        },
+        relations: ["roles"]
+    });
+    const topPower = Math.max(...requester.roles.map(role => role.power));
+    if (topPower <= role.power) { // you can only edit roles with lower power
+        res.status(400).json({
+            status: "error",
+            message: "You can't edit this role"
+        });
+        return;
+    }
+
+    if (!role) {
+        res.status(400).json({
+            status: "error",
+            message: "Role not found"
+        });
+        return;
+    }
+
+    role.description = req.body.description;
+    await AppDataSource.getRepository(Role).save(role);
+    res.json({
+        status: "success",
+        message: "Description updated"
+    });
+});
+
+RolesRouter.post("/mg/roles/up-power", ensureAuthenticated, requirePermissions(
+    PermNameComp, PagePermissions.AdminEditRolePower
+), targetRoleValid, async (req: CRequest, res) => {
+    if (req.body.power === undefined || req.body.power === null) {
+        res.status(400).json({
+            status: "error",
+            message: "Missing Data"
+        });
+        return;
+    }
+
+    const roleId = hashidService.roles.decodeSingle(req.body.roleId);
+    const role = await AppDataSource.getRepository(Role).findOne({
+        where: {
+            id: roleId
+        }
+    });
+
+    if (!role) {
+        res.status(400).json({
+            status: "error",
+            message: "Role not found"
+        });
+        return;
+    }
+
+    const _requester: User = <User>req.user;
+    const requester = await AppDataSource.getRepository(User).findOne({
+        where: {
+            id: _requester.id
+        },
+        relations: ["roles"]
+    });
+    const requesterTopPower = Math.max(...requester.roles.map(role => role.power));
+    if (requesterTopPower <= role.power) { // you can only edit roles with lower power
+        res.status(400).json({
+            status: "error",
+            message: "You can't edit this role"
+        });
+        return;
+    }
+
+    if (req.body.power >= requesterTopPower) { // you can only set powers less than your top power
+        res.status(400).json({
+            status: "error",
+            message: "Power is too high"
+        });
+        return;
+    }
+
+    role.power = req.body.power;
+    await AppDataSource.getRepository(Role).save(role);
+    res.json({
+        status: "success",
+        message: "Power updated"
+    });
+});
+
+RolesRouter.post("/mg/roles/up-default", ensureAuthenticated, requirePermissions(
+    PermNameComp, PagePermissions.AdminEditRoleDefault
+), targetRoleValid, async (req: CRequest, res) => {
+    if (req.body.default === undefined || req.body.default === null) {
+        res.status(400).json({
+            status: "error",
+            message: "Missing Data"
+        });
+        return;
+    }
+
+    const roleId = hashidService.roles.decodeSingle(req.body.roleId);
+    const role = await AppDataSource.getRepository(Role).findOne({
+        where: {
+            id: roleId
+        }
+    });
+
+    if (!role) {
+        res.status(400).json({
+            status: "error",
+            message: "Role not found"
+        });
+        return;
+    }
+
+    const _requester: User = <User>req.user;
+    const requester = await AppDataSource.getRepository(User).findOne({
+        where: {
+            id: _requester.id
+        },
+        relations: ["roles"]
+    });
+    const requesterTopPower = Math.max(...requester.roles.map(role => role.power));
+    if (requesterTopPower <= role.power) { // you can only edit roles with lower power
+        res.status(400).json({
+            status: "error",
+            message: "You can't edit this role"
+        });
+        return;
+    }
+
+    role.isDefault = req.body.isDefault;
+    await AppDataSource.getRepository(Role).save(role);
+    res.json({
+        status: "success",
+        message: "Default updated"
+    });
+});
+
+RolesRouter.post("/mg/roles/up-mfa", ensureAuthenticated, requirePermissions(
+    PermNameComp, PagePermissions.AdminEditRoleMfa
+), targetRoleValid, validateMfaToken, async (req: CRequest, res) => {
+    if (req.body.requiresMfa === undefined || req.body.requiresMfa === null) {
+        res.status(400).json({
+            status: "error",
+            message: "Missing Data"
+        });
+        return;
+    }
+
+    const roleId = hashidService.roles.decodeSingle(req.body.roleId);
+    const role = await AppDataSource.getRepository(Role).findOne({
+        where: {
+            id: roleId
+        }
+    });
+
+    if (!role) {
+        res.status(400).json({
+            status: "error",
+            message: "Role not found"
+        });
+        return;
+    }
+
+    const _requester: User = <User>req.user;
+    const requester = await AppDataSource.getRepository(User).findOne({
+        where: {
+            id: _requester.id
+        },
+        relations: ["roles"]
+    });
+    const requesterTopPower = Math.max(...requester.roles.map(role => role.power));
+    if (requesterTopPower <= role.power) { // you can only edit roles with lower power
+        res.status(400).json({
+            status: "error",
+            message: "You can't edit this role"
+        });
+        return;
+    }
+
+    role.requiresMfa = req.body.requiresMfa;
+    await AppDataSource.getRepository(Role).save(role);
+    res.json({
+        status: "success",
+        message: "Mfa updated"
+    });
+});
+
+
 RolesRouter.post("/mg/roles/up-permissions", ensureAuthenticated, requirePermissions(
     PermNameComp, PagePermissions.AdminEditRolePermissions
 ), targetRoleValid, async (req: CRequest, res) => {
@@ -216,35 +423,123 @@ RolesRouter.post("/mg/roles/up-permissions", ensureAuthenticated, requirePermiss
 
     const requesterPermissions = await getUserPermissions(requester.id);
 
-    const editedPermissions: {id: number, has: boolean | null}[] = req.body.permissions.map(perm => ({
+    const editedPermissions: {id: number, hasPermission: boolean | null}[] = req.body.permissions.map(perm => ({
         ...perm,
         id: hashidService.permissions.decodeSingle(perm.id)
-    })).filter(perm => perm.id !== null && hasPermissionsFrom(requesterPermissions, PermIdComp, perm.id));
+    })).filter(perm =>
+        perm.id !== null
+        && perm.hasPermission !== undefined
+        && hasPermissionsFrom(requesterPermissions, PermIdComp, perm.id) // should also exclude perms that not exist
+    );
+    console.log("Edited Permissions", editedPermissions);
 
     const allPerms = await AppDataSource.getRepository(Permission).find();
-    const newPerms = [];
+    console.log("All Permissions", allPerms.map(serializePermissionNormal));
+    const newPerms: RolePermission[] = [];
 
     allPerms.forEach(perm => {
-        // user supplied edit and has permission
-        const editedPerm = editedPermissions.find(p => p.id === perm.id);
+        const editedPerm = editedPermissions.find(ePerm => ePerm.id === perm.id);
 
         if (editedPerm !== undefined) {
-            newPerms.push({...perm, has: editedPerm.has});
+            // permission edited
+            const existingRolePerm = role.rolePermissions.find(rp => rp.permission.id === perm.id);
+            if (existingRolePerm !== undefined) {
+                console.log("Existing Role Perm", existingRolePerm);
+
+                if (editedPerm.hasPermission === null) {
+                    // dont add to new perms because null means remove
+                    console.log("Permission Removed");
+                } else {
+                    newPerms.push({
+                        ...existingRolePerm,
+                        hasPermission: editedPerm.hasPermission
+                    });
+                    console.log("Permission Updated");
+                }
+            } else {
+                console.log("Permission not already existing in role");
+                if (editedPerm.hasPermission === null) {
+                    // dont add to new perms because null means remove
+                    console.log("Permission Removed");
+                } else {
+                    const rolePerm = new RolePermission();
+                    rolePerm.role = role;
+                    rolePerm.permission = perm;
+                    rolePerm.hasPermission = editedPerm.hasPermission;
+
+                    newPerms.push(rolePerm);
+                    console.log("Permission Added", rolePerm);
+                }
+            }
         } else {
             // permission not edited
-            const _perm = perm.rolePermissions.find(rp => rp.permission.id === perm.id);
-            if (_perm) {
-                newPerms.push(perm);
+            const rolePerm = role.rolePermissions.find(rp => rp.permission.id === perm.id);
+            if (rolePerm === undefined) {
+                console.log("Role does not have permission", perm.name);
+            } else {
+                console.log("Role Perm", rolePerm);
+                newPerms.push(rolePerm);
             }
         }
     });
 
-    // TODO: respond with the actual permissions
     role.rolePermissions = newPerms;
+    role.rolePermissions.forEach(rp => rp.role = role);
+
+    console.log("new perms", newPerms);
+    console.log("role perms", role.rolePermissions);
     await AppDataSource.getRepository(Role).save(role);
     res.json({
         status: "success",
         message: "Permissions updated"
+    });
+    const __role = await AppDataSource.getRepository(Role).findOne({
+        where: {
+            id: roleId
+        },
+        relations: ["rolePermissions", "rolePermissions.permission", "rolePermissions.role"]
+    });
+    console.log("actual permissions", __role.rolePermissions);
+});
+
+
+RolesRouter.post("/mg/roles/toggle-disable", ensureAuthenticated, requirePermissions(
+    PermNameComp, PagePermissions.AdminEditRoleDisable
+), targetRoleValid, async (req: CRequest, res) => {
+    const roleId = hashidService.roles.decodeSingle(req.body.roleId);
+    const role = await AppDataSource.getRepository(Role).findOne({
+        where: {
+            id: roleId
+        }
+    });
+
+    if (!role) {
+        res.status(400).json({
+            status: "error",
+            message: "Role not found"
+        });
+        return;
+    }
+
+    const requester = await AppDataSource.getRepository(User).findOne({
+        where: {
+            id: (<User>req.user).id
+        },
+        relations: ["roles"]
+    });
+    const topPower = Math.max(...requester.roles.map(role => role.power));
+    if (topPower <= role.power) { // you can only edit roles with lower power
+        res.status(400).json({
+            status: "error",
+            message: "You can't edit this role"
+        });
+        return;
+    }
+
+    role.disabled = !role.disabled;
+    res.json({
+        status: "success",
+        message: `Role ${role.disabled ? "disabled" : "enabled"}`
     });
 });
 
@@ -262,6 +557,21 @@ RolesRouter.post("/mg/roles/delete", ensureAuthenticated, requirePermissions(
         res.status(400).json({
             status: "error",
             message: "Role not found"
+        });
+        return;
+    }
+
+    const requester = await AppDataSource.getRepository(User).findOne({
+        where: {
+            id: (<User>req.user).id
+        },
+        relations: ["roles"]
+    });
+    const topPower = Math.max(...requester.roles.map(role => role.power));
+    if (topPower <= role.power) { // you can only edit roles with lower power
+        res.status(400).json({
+            status: "error",
+            message: "You can't edit this role"
         });
         return;
     }

@@ -27,7 +27,7 @@ export class Role {
     @Column({ default: 1 })
         power: number;
 
-    @OneToMany(() => RolePermission, rolePermission => rolePermission.role)
+    @OneToMany(() => RolePermission, rolePermission => rolePermission.role, { cascade: true })
         rolePermissions: RolePermission[];
 
     @ManyToMany(() => User, user => user.roles)

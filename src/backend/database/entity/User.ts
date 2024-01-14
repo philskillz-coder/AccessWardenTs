@@ -37,6 +37,7 @@ export class User {
     @Column({default: ""})
         loginSession: string = "";
 
+    // diffrent
     @Column({default: false})
         suspended: boolean = false;
 

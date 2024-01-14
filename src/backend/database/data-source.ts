@@ -8,7 +8,8 @@ import { Migration1702922275248 } from "./migration/1702922275248-migration";
 import { Migration1702923114301 } from "./migration/1702923114301-migration";
 import { Migration1704023268622 } from "./migration/1704023268622-migration";
 import { Migration1704538865031 } from "./migration/1704538865031-migration";
-import { Migration1704834562998 } from "./migration/1704834562998-migration";
+import { Migration1705168976545 } from "./migration/1705168976545-migration";
+import { Migration1705175152800 } from "./migration/1705175152800-migration";
 
 dotenv.config();
 
@@ -32,6 +33,7 @@ export const AppDataSource = new DataSource({
         Migration1702923114301,
         Migration1704023268622,
         Migration1704538865031,
-        Migration1704834562998
+        Migration1705168976545,
+        Migration1705175152800
     ],
 });

@@ -15,7 +15,7 @@ export class RolePermission {
     @ManyToOne(() => Permission, permission => permission.rolePermissions)
         permission: Permission;
 
-    @Column()
+    @Column({ nullable: false })
         hasPermission: boolean;
 
     @CreateDateColumn()
