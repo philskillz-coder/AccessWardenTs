@@ -118,8 +118,6 @@ AppDataSource.initialize()
     .then(() => {
         logger.info("Postgres Client started");
 
-        // TODO: create required roles if not exist
-
         // check if all permissions exist
         for (const permission of Object.values(PagePermissions)) {
             AppDataSource.getRepository(Permission).findOne(

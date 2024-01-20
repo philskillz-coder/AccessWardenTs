@@ -176,6 +176,29 @@ input {
     }
 }
 
+textarea {
+    font-size: 14px !important;
+    border-radius: 6px;
+    color: var(--text);
+    background: none;
+    border: 1px solid var(--gray3);
+
+    &::placeholder {
+        font-size: 14px; // Increase the font-size for larger placeholder
+        color: var(--gray2);
+    }
+
+    &:disabled {
+        cursor: default;
+        color: var(--gray2);
+    }
+
+    &:focus {
+        outline: none;
+        border: 1px solid var(--gray2);
+    }
+}
+
 label {
     font-size: 14px;
     color: var(--text);

@@ -93,7 +93,7 @@ function ViewUsers(props) {
                 setUsers([...users(), ...res.data.users || []]);
             }
 
-            if (res.data.users.length > 0) {
+            if (!selectedUser() && res.data.users.length > 0) { // only select first user if there arent
                 setSelectedUser(res.data.users[0]);
             }
         });
@@ -141,6 +141,10 @@ function ViewUsers(props) {
                     setUsers(res.data.users || []);
                 } else {
                     setUsers([...users(), ...res.data.users || []]); // append new users to the list
+                }
+
+                if (!selectedUser() && res.data.users.length > 0) { // only select first user if there arent
+                    setSelectedUser(res.data.users[0]);
                 }
             });
         }
@@ -227,8 +231,6 @@ function ViewUsers(props) {
         });
     }
 
-    // TODO: change login session on any user update
-    // TODO: reset user cache on login
     function updateUsername() {
         api.post("/api/mg/users/up-username", { userId: selectedUser().id, username: newUsername() }, async res => {
             if (res.hasError()) {

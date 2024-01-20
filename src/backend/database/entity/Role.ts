@@ -18,7 +18,7 @@ export class Role {
     @Column()
         requiresMfa: boolean;
 
-    @Column({ default: false}) // TODO: only has role when not disabled
+    @Column({ default: false})
         disabled: boolean;
 
     @Column()

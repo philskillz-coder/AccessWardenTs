@@ -59,7 +59,7 @@ function ViewPermissions(props) {
                 setPermissions([...permissions(), ...res.data.permissions || []]);
             }
 
-            if (res.data.permissions.length > 0) {
+            if (!selectedPermission() && res.data.permissions.length > 0) {
                 setSelectedPermission(res.data.permissions[0]);
             }
         });
@@ -87,6 +87,10 @@ function ViewPermissions(props) {
             } else {
                 setPermissions([...permissions(), ...res.data.permissions || []]);
             }
+
+            if (!selectedPermission() && res.data.permissions.length > 0) {
+                setSelectedPermission(res.data.permissions[0]);
+            }
         });
     }
 
@@ -102,7 +106,7 @@ function ViewPermissions(props) {
     }
 
     function hasPermission(permission: string) {
-        return store().user().permissions.includes(permission);
+        return store().user().permissions.find(perm => perm.name === permission) !== undefined;
     }
 
 
@@ -268,7 +272,6 @@ function ViewPermissions(props) {
         setSelectedPermission(perm);
     }
 
-    // TODO: ViewUsers.tsx, ViewRoles.tsx, ViewPermissions.tsx: fix selecting item when loading more
     return (
         <ShowIfPermission hasPermission={hasPagePermission}>
 

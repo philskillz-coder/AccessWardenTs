@@ -18,32 +18,37 @@ export async function getUserPermissions(userId: number): Promise<Permission[]> 
         const user = await AppDataSource.getRepository(User).findOne({
             where: {
                 id: userId,
+                roles: {
+                    disabled: false
+                }
             },
             relations: ["roles", "roles.rolePermissions", "roles.rolePermissions.role", "roles.rolePermissions.permission"],
         });
 
-        if (user.isAdmin) {
-            const permissions = (await AppDataSource.getRepository(Permission).find()).map(p => ({ ...p }));
-            await cacheService.set(`user-permissions-${userId}`, permissions);
-            return permissions;
-        }
-
         if (!user) {
             return [];
+        }
+
+        if (user.isAdmin) {
+            const permissions = (await AppDataSource.getRepository(Permission).find()).map(p => ({ ...p }));
+            return permissions;
         }
 
         // Create a map to store the permissions with their corresponding status
         const userPermissions: Map<RolePermission, boolean> = new Map();
 
         // Iterate through user roles
-        user.roles.filter(role => !role.requiresMfa || user.mfaEnabled)
+        user.roles
+            .filter(role => !role.requiresMfa || user.mfaEnabled) // filter roles out that require mfa if the user disabled mfa
             .forEach(role => {
-                role.rolePermissions.sort((a, b) => b.role.power - a.role.power).forEach(rolePermission => {
-                    // check if the permission is not already in the map
-                    if (![...userPermissions.keys()].find(rp => rp.permission.id === rolePermission.permission.id)) {
-                        userPermissions.set(rolePermission, rolePermission.hasPermission);
-                    }
-                });
+                role.rolePermissions
+                    .sort((a, b) => b.role.power - a.role.power) // sort the rolePermissions by power
+                    .forEach(rolePermission => {
+                        // check if the permission is not already in the map
+                        if (![...userPermissions.keys()].find(rp => rp.permission.id === rolePermission.permission.id)) {
+                            userPermissions.set(rolePermission, rolePermission.hasPermission);
+                        }
+                    });
             });
 
         const permissions: Permission[] = Array.from(userPermissions.keys()).filter(rp => rp.hasPermission).map(permission => ({
@@ -65,19 +70,19 @@ export const PermNameComp = (p: Permission): string => {
 export const PermIdComp = (p: Permission): number => {
     return p.id;
 };
-export const PerRIdComp = (p: RolePermission): string => {
-    return hashidService.roles.encode(p.role.id);
+export const PerRIdComp = (p: Permission): string => {
+    return hashidService.permissions.encode(p.id);
 };
 
 // eslint-disable-next-line no-unused-vars
 export async function hasPermissions<T>(userId: number, comp: (perm: Permission) => T, ...requiredPermissions: T[]): Promise<boolean> {
     const userPermissions = await getUserPermissions(userId);
-    const hasPermission = requiredPermissions.every(reqP => userPermissions.find(up => comp(up) === reqP));
-    return hasPermission;
+    const hasPermissions = requiredPermissions.every(reqP => userPermissions.find(up => comp(up) === reqP));
+    return hasPermissions;
 }
 
 // eslint-disable-next-line no-unused-vars
 export function hasPermissionsFrom<T>(userPermissions: Permission[], comp: (perm: Permission) => T, ...requiredPermissions: T[]): boolean {
-    const hasPermission = requiredPermissions.every(reqP => userPermissions.find(up => comp(up) === reqP));
-    return hasPermission;
+    const hasPermissions = requiredPermissions.every(reqP => userPermissions.find(up => comp(up) === reqP));
+    return hasPermissions;
 }

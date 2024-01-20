@@ -32,7 +32,11 @@ function ViewRoles(props) {
     const [newName, setNewName] = createSignal<string | null>(null);
     const [editingDescription, setEditingDescription] = createSignal(false);
     const [newDescription, setNewDescription] = createSignal<string | null>(null);
+    const [editingPower, setEditingPower] = createSignal(false);
+    const [newPower, setNewPower] = createSignal<number | null>(null);
 
+    const [defaultRoleCR, setDefaultRoleCR] = createSignal(false);
+    const [mfaRoleCR, setMfaRoleCR] = createSignal(false);
     const [disableRoleCR, setDisableRoleCR] = createSignal(false);
     const [deleteRoleCR, setDeleteRoleCR] = createSignal(false);
 
@@ -88,7 +92,7 @@ function ViewRoles(props) {
                 setRoles([...roles(), ...res.data.roles || []]);
             }
 
-            if (res.data.roles.length > 0) {
+            if (!selectedRole() && res.data.roles.length > 0) {
                 setSelectedRole(res.data.roles[0]);
             }
         });
@@ -137,6 +141,10 @@ function ViewRoles(props) {
                 } else {
                     setRoles([...roles(), ...res.data.roles || []]); // append new roles to the list
                 }
+
+                if (!selectedRole() && res.data.roles.length > 0) {
+                    setSelectedRole(res.data.roles[0]);
+                }
             });
         }
     }
@@ -180,6 +188,11 @@ function ViewRoles(props) {
     function closeDescriptionEditor() {
         setEditingDescription(false);
         setNewDescription(null);
+    }
+
+    function closePowerEditor() {
+        setEditingPower(false);
+        setNewPower(null);
     }
 
     function updateRoleList() {
@@ -235,6 +248,70 @@ function ViewRoles(props) {
                 // nothing updated in role object
                 setNewDescription(null);
                 closeDescriptionEditor();
+            }
+        });
+    }
+
+    function updatePower() {
+        api.post("/api/mg/roles/up-power", { roleId: selectedRole().id, power: newPower() }, async res => {
+            if (res.hasError()) {
+                notificationService.show({
+                    status: "danger",
+                    title: "Error",
+                    description: res.message
+                });
+            } else {
+                notificationService.show({
+                    status: "success",
+                    title: "Success",
+                    description: "Power updated"
+                });
+                setSelectedRole({ ...selectedRole(), power: newPower() });
+                setNewPower(null);
+                updateRoleList();
+                closePowerEditor();
+            }
+        });
+    }
+
+    function toggleRoleDefault() {
+        api.post("/api/mg/roles/toggle-default", { roleId: selectedRole().id }, async res => {
+            if (res.hasError()) {
+                notificationService.show({
+                    status: "danger",
+                    title: "Error",
+                    description: res.message
+                });
+            } else {
+                setSelectedRole({ ...selectedRole(), isDefault: !selectedRole().isDefault });
+                updateRoleList();
+                setDefaultRoleCR(false);
+                notificationService.show({
+                    status: "success",
+                    title: "Success",
+                    description: selectedRole().isDefault ? "Set role default" : "Unset role default"
+                });
+            }
+        });
+    }
+
+    function toggleRoleMfa() {
+        api.post("/api/mg/roles/toggle-mfa", { roleId: selectedRole().id }, async res => {
+            if (res.hasError()) {
+                notificationService.show({
+                    status: "danger",
+                    title: "Error",
+                    description: res.message
+                });
+            } else {
+                setSelectedRole({ ...selectedRole(), requiresMfa: !selectedRole().requiresMfa });
+                updateRoleList();
+                setMfaRoleCR(false);
+                notificationService.show({
+                    status: "success",
+                    title: "Success",
+                    description: selectedRole() ? "Role requires MFA" : "Role doesn't require MFA"
+                });
             }
         });
     }
@@ -464,17 +541,23 @@ function ViewRoles(props) {
                                     class="ui-bg-gray5 dbg2"
                                     role="button"
                                     onClick={() => selectRole(role)}
-                                    justifyContent="left"
+                                    justifyContent="start"
                                     height="fit-content"
                                     padding="$2"
                                 >
                                     <span>{role.name}</span>
-                                    <Show when={role.disabled}>
-                                        <HStack>
-                                            <Tag cursor="default" colorScheme="danger" title="Disabled">Disabled</Tag>
-                                        </HStack>
-                                        <HStack>
-                                            <Tag cursor="default" colorScheme="warning" title="MFA Required">MFA Required</Tag>
+                                    <span>Power: <Tag cursor="default" title="Role power">{role.power}</Tag></span>
+                                    <Show when={role.disabled || role.requiresMfa || role.isDefault}>
+                                        <HStack mt="$1">
+                                            <Show when={role.disabled}>
+                                                <Tag cursor="default" colorScheme="danger" title="Disabled">Disabled</Tag>
+                                            </Show>
+                                            <Show when={role.requiresMfa}>
+                                                <Tag cursor="default" colorScheme="warning" title="Requires MFA">MFA</Tag>
+                                            </Show>
+                                            <Show when={role.isDefault}>
+                                                <Tag cursor="default" colorScheme="warning" title="Default Role">Default</Tag>
+                                            </Show>
                                         </HStack>
                                     </Show>
                                 </VStack>
@@ -493,10 +576,25 @@ function ViewRoles(props) {
                                     <Tag colorScheme="danger" cursor="default" title="Disabled">Disabled</Tag>
                                 </Show>
                                 <h1>{selectedRole().name}</h1>
-                                <HStack>
-                                    <Tag title="Created at" cursor="default"><div class="ui-icon me-1"><BiSolidPlusCircle size={14}/></div> {format(selectedRole().createdAt, "yyyy-MM-dd")}</Tag>
-                                    <Tag title="Modified at" cursor="default"><div class="ui-icon me-1"><BiSolidPencil size={14}/></div> {format(selectedRole().updatedAt, "yyyy-MM-dd")}</Tag>
-                                </HStack>
+                                <VStack mt="$1" alignItems="start">
+                                    <HStack>
+                                        <Tag title="Created at" cursor="default"><div class="ui-icon me-1"><BiSolidPlusCircle size={14}/></div> {format(selectedRole().createdAt, "yyyy-MM-dd")}</Tag>
+                                        <Tag title="Modified at" cursor="default"><div class="ui-icon me-1"><BiSolidPencil size={14}/></div> {format(selectedRole().updatedAt, "yyyy-MM-dd")}</Tag>
+                                    </HStack>
+                                    <Show when={selectedRole().disabled || selectedRole().requiresMfa || selectedRole().isDefault}>
+                                        <HStack mt="$1">
+                                            <Show when={selectedRole().disabled}>
+                                                <Tag cursor="default" colorScheme="danger" title="Disabled">Disabled</Tag>
+                                            </Show>
+                                            <Show when={selectedRole().requiresMfa}>
+                                                <Tag cursor="default" colorScheme="warning" title="Requires MFA">MFA</Tag>
+                                            </Show>
+                                            <Show when={selectedRole().isDefault}>
+                                                <Tag cursor="default" colorScheme="warning" title="Default Role">Default</Tag>
+                                            </Show>
+                                        </HStack>
+                                    </Show>
+                                </VStack>
                             </VStack>
                             <div class="actions">
                                 <div class="action border">
@@ -577,6 +675,70 @@ function ViewRoles(props) {
                                                 </ModalFooter>
                                             </ModalContent>
                                         </Modal>
+                                    </div>
+
+                                    <label for="mg-role-power">Power</label>
+                                    <div class="action border">
+                                        <input id="mg-role-power" value={selectedRole().power} disabled/>
+                                        <button
+                                            type="button"
+                                            class="bg-info ui-icon w-20"
+                                            onClick={() => setEditingPower(true)}
+                                            title={!hasPermission({name: "Admin.Edit.Role.Power"}) ? "You don't have the permission to do that!" : ""}
+                                            disabled={!hasPermission({name: "Admin.Edit.Role.Power"})}
+                                        >
+                                            <div><BiSolidPencil size={15} color="#ffffff"/></div>
+                                        </button>
+                                        <Modal opened={editingPower()} onClose={closePowerEditor} initialFocus="#mg-role-new-power">
+                                            <ModalOverlay />
+                                            <ModalContent>
+                                                <ModalCloseButton />
+                                                <ModalHeader>Edit Power</ModalHeader>
+                                                <ModalBody>
+                                                    <FormControl mb="$4">
+                                                        <FormLabel>Power</FormLabel>
+                                                        <Input id="mg-role-new-power" type="number" placeholder="Enter new power" autocomplete="off" spellcheck={false} onChange={e => setNewPower(e.target.valueAsNumber)}/>
+                                                    </FormControl>
+                                                </ModalBody>
+                                                <ModalFooter>
+                                                    <Button onClick={updatePower}>Update</Button>
+                                                    <Button id="mg-role-new-power-cancel" onClick={closePowerEditor} ms="auto" colorScheme={"primary"}>Cancel</Button>
+                                                </ModalFooter>
+                                            </ModalContent>
+                                        </Modal>
+                                    </div>
+
+                                    <div class="action border border-center">
+                                        <button
+                                            type="button"
+                                            title={!hasPermission({name: "Admin.Edit.Role.Default"}) ? "You don't have the permission to do that!" : ""}
+                                            disabled={!hasPermission({name: "Admin.Edit.Role.Default"})}
+                                            onClick={() => setDefaultRoleCR(true)}
+                                        >
+                                            <Show when={!selectedRole().isDefault}
+                                                fallback="Unset default"
+                                            >
+                                                Set default
+                                            </Show>
+                                        </button>
+                                        <ModalConfirmation isOpen={defaultRoleCR} onCancel={() => setDefaultRoleCR(false)} onConfirm={toggleRoleDefault} title="Confirmation required">
+                                            <p>Are you sure you want to {selectedRole().isDefault ? "unset" : "set"} default on role {selectedRole().name}</p>
+                                        </ModalConfirmation>
+                                        <button
+                                            type="button"
+                                            title={!hasPermission({name: "Admin.Edit.Role.Mfa"}) ? "You don't have the permission to do that!" : ""}
+                                            disabled={!hasPermission({name: "Admin.Edit.Role.Mfa"})}
+                                            onClick={() => setMfaRoleCR(true)}
+                                        >
+                                            <Show when={!selectedRole().requiresMfa}
+                                                fallback="Unset MFA"
+                                            >
+                                                Require MFA
+                                            </Show>
+                                        </button>
+                                        <ModalConfirmation isOpen={mfaRoleCR} onCancel={() => setMfaRoleCR(false)} onConfirm={toggleRoleMfa} title="Confirmation required">
+                                            <p>Are you sure you want to {selectedRole().disabled ? "unset" : "require"} mfa on role {selectedRole().name}</p>
+                                        </ModalConfirmation>
                                     </div>
                                     <div class="action bg-danger">
                                         <button

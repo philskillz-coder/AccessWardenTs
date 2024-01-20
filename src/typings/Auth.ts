@@ -33,6 +33,7 @@ export interface RoleVariantDef extends RoleNormal {
     description: string;
     requiresMfa: boolean;
     isDefault: boolean;
+    power: number;
     disabled: boolean;
     createdAt: number;
     updatedAt: number;

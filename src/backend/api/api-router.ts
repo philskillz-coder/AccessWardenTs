@@ -1,22 +1,20 @@
 import Hashing from "@shared/Hashing";
 import logger from "@shared/Logger";
-import { isValidEmail } from "@shared/Mail";
-import { isPasswordValid, PASSWORD_RULES } from "@shared/Password";
-import { isUsernameValid } from "@shared/Username";
+import { isValidEmail, isValidPassword, isValidUsername } from "@shared/Validation";
 import { ApiResponseFlags, UserVariantAuth } from "@typings";
 import dotenv from "dotenv";
 import { Router } from "express";
 import speakeasy from "speakeasy";
 
 import { AppDataSource } from "../database/data-source";
-import { User } from "../database/entity";
+import { Role, User } from "../database/entity";
 import { serializeUserVariantPerms } from "../database/serializer";
 import { CRequest } from "../express";
-import { getUserPermissions, PermNameComp } from "../services/PermissionsService";
+import { getUserPermissions } from "../services/PermissionsService";
 import temporaryValueService from "../services/TemporaryValueService";
 import PermissionsRouter from "./permissions_api";
 import RolesRouter from "./roles_api";
-import { ensureAuthenticated, ensureDevEnv, ensureMfaDisabled, ensureMfaEnabled, requirePermissions, validateMfaToken } from "./tools";
+import { ensureAuthenticated, ensureDevEnv, ensureMfaDisabled, ensureMfaEnabled, validateMfaToken } from "./tools";
 import UsersRouter from "./users_api";
 
 dotenv.config();
@@ -123,22 +121,29 @@ ApiRouter.post("/auth/logout", ensureAuthenticated, (req, res) => {
 ApiRouter.post("/auth/register", async function(req: CRequest, res) {
     // check if username or email is already taken
 
-    if (!req.body.username || !req.body.email || !req.body.password) {
-        return res.status(400).json({ status: "error", message: "Missing Data" });
+    const username = req.body.username;
+    const email = req.body.email;
+    const password = req.body.password;
+
+    if (username === undefined || email === undefined || password === undefined) {
+        return res.status(400).json({ status: "error", message: "Missing required fields" });
     }
 
-    if (!isValidEmail(req.body.email)) {
-        return res.status(400).json({ status: "error", message: "Invalid email" });
-    }
-
-    if (!isUsernameValid(req.body.username)) {
+    if (!isValidUsername(username)) {
         return res.status(400).json({ status: "error", message: "Invalid username" });
     }
 
-    if (!isPasswordValid(req.body.password, PASSWORD_RULES)) {
+    if (!isValidEmail(email)) {
+        return res.status(400).json({ status: "error", message: "Invalid email" });
+    }
+
+    if (!isValidPassword(password)) {
         return res.status(400).json({ status: "error", message: "Password is not safe enough" });
     }
 
+
+    // TODO: could add robot check here
+    // TODO: you could combine the two queries into one
     if (await AppDataSource.getRepository(User).exist({ where: { email: req.body.email }})) {
         return res.status(400).json({ status: "error", message: "Email is already taken"});
     }
@@ -160,8 +165,10 @@ ApiRouter.post("/auth/register", async function(req: CRequest, res) {
     user.passwordSalt = salt;
     user.mfaEnabled = false;
     user.mfaSecret = null;
-    user.roles = [];
-    // TODO: add default roles
+
+    const defaultRoles = await AppDataSource.getRepository(Role).find({ where: { isDefault: true }});
+    user.roles = [...defaultRoles];
+    // TODO: check if default roles work
     // TODO: add email verification
 
     try {
@@ -274,21 +281,27 @@ ApiRouter.post("/test-mfa", ensureDevEnv, ensureAuthenticated, validateMfaToken,
 });
 
 ApiRouter.post("/user/update/mail", ensureAuthenticated, validateMfaToken, async function(req: CRequest, res) {
-    if (!req.body.email) {
+    const email = req.body.email;
+    if (email === undefined) {
         return res.status(400).json({ status: "error", message: "Missing Data" });
     }
 
-    if (!isValidEmail(req.body.email)) {
+    // TODO: global: same response when missing data: "Missing required fields"
+
+    if (!isValidEmail(email)) {
         return res.status(400).json({ status: "error", message: "Invalid email" });
     }
 
-    if (await AppDataSource.getRepository(User).exist({ where: { email: req.body.email }})) {
+    if (await AppDataSource.getRepository(User).exist({ where: { email: email }})) {
         return res.status(400).json({ status: "error", message: "Email is already taken"});
     }
     // TODO: implement email verification
-    // TODO: verify password
 
     const user = <User>req.user;
+    if (!Hashing.verifyHash(req.body.password, user.passwordSalt, process.env.HASH_PEPPER, user.passwordHash)) {
+        return res.status(400).json({ status: "error", message: "Incorrect password" });
+    }
+
     user.email = req.body.email;
     user.loginSession = Hashing.generateSalt(); // logout all sessions
     await AppDataSource.getRepository(User).save(user);
@@ -303,11 +316,12 @@ ApiRouter.post("/user/update/mail", ensureAuthenticated, validateMfaToken, async
 });
 
 ApiRouter.post("/user/update/username", ensureAuthenticated, validateMfaToken, async function(req: CRequest, res) {
-    if (!req.body.username) {
+    const username = req.body.username;
+    if (username === undefined) {
         return res.status(400).json({ status: "error", message: "Missing Data" });
     }
 
-    if (!isUsernameValid(req.body.username)) {
+    if (!isValidUsername(req.body.username)) {
         return res.status(400).json({ status: "error", message: "Invalid username" });
     }
 
@@ -332,7 +346,7 @@ ApiRouter.post("/user/update/username", ensureAuthenticated, validateMfaToken, a
 ApiRouter.post("/user/update/password", ensureAuthenticated, validateMfaToken, async function(req: CRequest, res) {
     const { curPassword, newPassword } = req.body;
 
-    if (curPassword === null || newPassword === null) {
+    if (curPassword === undefined || newPassword === undefined) {
         return res.status(400).json({ status: "error", message: "Missing Data" });
     }
 
@@ -341,7 +355,7 @@ ApiRouter.post("/user/update/password", ensureAuthenticated, validateMfaToken, a
         return res.status(400).json({ status: "error", message: "(Old) Password doesn't match" });
     }
 
-    if (!isPasswordValid(newPassword, PASSWORD_RULES)) {
+    if (!isValidPassword(newPassword)) {
         return res.status(400).json({ status: "error", message: "Password is not safe enough" });
     }
 
@@ -359,17 +373,6 @@ ApiRouter.post("/user/update/password", ensureAuthenticated, validateMfaToken, a
         }
     });
     return res.json({ status: "success", message: "Password updated" });
-});
-
-
-// User Updating Rules:
-// You can only update a user if
-// - You have the permission to update whatever
-// - The target user is not admin
-
-
-ApiRouter.post("/perm/test", ensureAuthenticated, requirePermissions(PermNameComp, "Test"), (req: CRequest, res) => {
-    res.json({status: "success", message: "You have the permission"});
 });
 
 export default ApiRouter;

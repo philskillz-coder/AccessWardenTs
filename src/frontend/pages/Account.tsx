@@ -73,6 +73,7 @@ const Account = props => {
     function closeEmailEditor() {
         setEditingEmail(false);
         setNewEmail(null);
+        setCurPassword(null);
     }
 
     function closeUsernameEditor() {
@@ -87,7 +88,7 @@ const Account = props => {
     }
 
     function updateEmail() {
-        api.post("/api/user/update/mail", { email: newEmail() }, async res => {
+        api.post("/api/user/update/mail", { email: newEmail(), curPassword: curPassword() }, async res => {
             if (res.hasError()) {
                 notificationService.show({
                     status: "danger",
@@ -168,6 +169,10 @@ const Account = props => {
                                 <FormControl mb="$4">
                                     <FormLabel>Email Address</FormLabel>
                                     <Input id="acc-new-mail" type="mail" placeholder="Enter new email address" autocomplete="off" spellcheck={false} onChange={e => setNewEmail(e.target.value)}/>
+                                </FormControl>
+                                <FormControl mb="$4">
+                                    <FormLabel>Current Password</FormLabel>
+                                    <Input id="acc-new-mail-cur-password" type="password" placeholder="Enter current password" autocomplete="current-password" spellcheck={false} onChange={e => setCurPassword(e.target.value)}/>
                                 </FormControl>
                             </ModalBody>
                             <ModalFooter>

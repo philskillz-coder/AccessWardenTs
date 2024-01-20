@@ -1,6 +1,7 @@
 import Hashing from "@shared/Hashing";
 import logger from "@shared/Logger";
-import { isValidEmail } from "@shared/Mail";
+import { isValidEmail, isValidPassword, isValidUsername } from "@shared/Validation";
+import { UserVariantAuth } from "@typings";
 import { AppDataSource } from "backend/database/data-source";
 import { Role, User } from "backend/database/entity";
 import { PagePermissions } from "backend/database/required-data";
@@ -8,6 +9,7 @@ import { serializeRoleNormal, serializeUserVariantDef, serializeUserVariantPerms
 import { CRequest } from "backend/express";
 import hashidService from "backend/services/HashidService";
 import { getUserPermissions, PermNameComp } from "backend/services/PermissionsService";
+import { userTopPower } from "backend/services/RolesService";
 import dotenv from "dotenv";
 import { Router } from "express";
 import { ILike } from "typeorm";
@@ -53,18 +55,22 @@ UsersRouter.post("/mg/users/login-as", ensureAuthenticated, requirePermissions(
         }
 
         const serialized = serializeUserVariantPerms(targetUser, await getUserPermissions(user.id));
+        const mfaRecommended = user.roles.map(role => !role.requiresMfa || user.mfaEnabled).some(v => !v);
 
         res.status(200).json({
             status: "success",
             message: "User logged in successfully",
-            data: { user: {
-                ...serialized,
-                mfaSuggested: false // TODO: check if the user has roles that require mfa and dont has mfa enabled
-            } }
+            data: {
+                user: <UserVariantAuth>{
+                    ...serialized,
+                    mfaSuggested: mfaRecommended
+                }
+            }
         });
     });
 });
 
+// TODO: sort
 UsersRouter.post("/mg/users/get", ensureAuthenticated, requirePermissions(
     PermNameComp, PagePermissions.AdminViewUsers
 ), async (req: CRequest, res) => {
@@ -130,6 +136,7 @@ UsersRouter.post("/mg/users/get-all-roles", ensureAuthenticated, requirePermissi
     });
 });
 
+// TODO: sort
 UsersRouter.post("/mg/users/search", ensureAuthenticated, requirePermissions(
     PermNameComp, PagePermissions.AdminViewUsers
 ), async (req: CRequest, res) => {
@@ -174,7 +181,8 @@ UsersRouter.post("/mg/users/search", ensureAuthenticated, requirePermissions(
 UsersRouter.post("/mg/users/up-username", ensureAuthenticated, requirePermissions(
     PermNameComp, PagePermissions.AdminEditUserUsername
 ), targetUserNotAdmin, async (req: CRequest, res) => {
-    if (req.body.username === undefined) {
+    const username = req.body.username;
+    if (username === undefined) {
         res.status(400).json({
             status: "error",
             message: "Missing Data"
@@ -182,10 +190,17 @@ UsersRouter.post("/mg/users/up-username", ensureAuthenticated, requirePermission
         return;
     }
 
-    // no username validation because the admin can set any username
+    if (!isValidUsername(username)) {
+        res.status(400).json({
+            status: "error",
+            message: "Invalid Username"
+        });
+        return;
+    }
+
     const exists = await AppDataSource.getRepository(User).exist({
         where: {
-            username: req.body.username
+            username: username
         }
     });
     if (exists) {
@@ -211,7 +226,7 @@ UsersRouter.post("/mg/users/up-username", ensureAuthenticated, requirePermission
         return;
     }
 
-    user.username = req.body.username;
+    user.username = username;
     await AppDataSource.getRepository(User).save(user);
     res.json({
         status: "success",
@@ -222,7 +237,8 @@ UsersRouter.post("/mg/users/up-username", ensureAuthenticated, requirePermission
 UsersRouter.post("/mg/users/up-email", ensureAuthenticated, requirePermissions(
     PermNameComp, PagePermissions.AdminEditUserEmail
 ), targetUserNotAdmin, async (req: CRequest, res) => {
-    if (req.body.email === undefined) {
+    const email = req.body.email;
+    if (email === undefined) {
         res.status(400).json({
             status: "error",
             message: "Missing Data"
@@ -230,7 +246,7 @@ UsersRouter.post("/mg/users/up-email", ensureAuthenticated, requirePermissions(
         return;
     }
 
-    if (!isValidEmail(req.body.email)) {
+    if (!isValidEmail(email)) {
         res.status(400).json({
             status: "error",
             message: "Invalid Email"
@@ -239,7 +255,7 @@ UsersRouter.post("/mg/users/up-email", ensureAuthenticated, requirePermissions(
     }
     const exists = await AppDataSource.getRepository(User).exist({
         where: {
-            email: req.body.email
+            email: email
         }
     });
     if (exists) {
@@ -265,7 +281,7 @@ UsersRouter.post("/mg/users/up-email", ensureAuthenticated, requirePermissions(
         return;
     }
 
-    user.email = req.body.email;
+    user.email = email;
     await AppDataSource.getRepository(User).save(user);
     res.json({
         status: "success",
@@ -277,6 +293,22 @@ UsersRouter.post("/mg/users/up-password", ensureAuthenticated, validateMfaToken,
     PermNameComp, PagePermissions.AdminEditUserPassword
 ), targetUserNotAdmin,
 async (req: CRequest, res) => {
+    const password = req.body.password;
+    if (password === undefined) {
+        res.status(400).json({
+            status: "error",
+            message: "Missing Data"
+        });
+        return;
+    }
+    if (!isValidPassword(password)) {
+        res.status(400).json({
+            status: "error",
+            message: "Invalid Password"
+        });
+        return;
+    }
+
     const userId = hashidService.users.decodeSingle(req.body.userId);
     const user = await AppDataSource.getRepository(User).findOne({
         where: {
@@ -292,9 +324,8 @@ async (req: CRequest, res) => {
         return;
     }
 
-    // no password validation and verification because the admin can set any password
     const salt = Hashing.generateSalt();
-    const passwordHash = Hashing.createHash(req.body.password, salt, process.env.HASH_PEPPER);
+    const passwordHash = Hashing.createHash(password, salt, process.env.HASH_PEPPER);
     user.passwordHash = passwordHash;
     user.passwordSalt = salt;
     user.loginSession = Hashing.generateSalt();
@@ -404,8 +435,7 @@ UsersRouter.post("/mg/users/up-roles", ensureAuthenticated, requirePermissions(
     console.log("All roles", allRoles);
     const newRoles = [];
 
-    // TODO: check if this works
-    const requesterTopPower = Math.max(...requester.roles.map(role => role.power));
+    const requesterTopPower = await userTopPower(requester.id);
 
     allRoles.forEach(role => {
         const editedRole = editedRoles.find(r => r.id === role.id);
