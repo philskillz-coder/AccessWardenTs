@@ -1,9 +1,10 @@
-import { isValidPermissionDescription, isValidPermissionName } from "@shared/Validation";
+import { baseCheck } from "@shared/Validation";
 import { AppDataSource } from "backend/database/data-source";
 import { Permission, User } from "backend/database/entity";
 import { PagePermissions } from "backend/database/required-data";
 import { serializePermissionVariantDef, serializeRoleNormal } from "backend/database/serializer";
 import { CRequest } from "backend/express";
+import { PERMISSION_DESCRIPTION_RULES, PERMISSION_NAME_RULES } from "backend/Rules";
 import hashidService from "backend/services/HashidService";
 import { hasPermissions, PermIdComp, PermNameComp } from "backend/services/PermissionsService";
 import dotenv from "dotenv";
@@ -19,6 +20,20 @@ const PermissionsRouter = Router();
 // TODO: new role, permssion, user endpoints + frontend
 // TODO: check if all endpoints work
 // TODO: not a robot check when register, login
+
+PermissionsRouter.post("/mg/permissions/create/info", ensureAuthenticated, requirePermissions(
+    PermNameComp, PagePermissions.AdminCreatePermission
+), async (req: CRequest, res) => {
+    res.json({
+        status: "success",
+        data: {
+            rules: {
+                name: PERMISSION_NAME_RULES,
+                description: PERMISSION_DESCRIPTION_RULES
+            }
+        }
+    });
+});
 
 PermissionsRouter.post("/mg/permissions/create", ensureAuthenticated, requirePermissions(
     PermNameComp, PagePermissions.AdminCreatePermission
@@ -45,7 +60,7 @@ PermissionsRouter.post("/mg/permissions/create", ensureAuthenticated, requirePer
     }
 
     const pName = req.body.name;
-    if (!isValidPermissionName(pName)) {
+    if (!baseCheck(pName, PERMISSION_NAME_RULES)) {
         res.status(400).json({
             status: "error",
             message: "Invalid name"
@@ -54,7 +69,7 @@ PermissionsRouter.post("/mg/permissions/create", ensureAuthenticated, requirePer
     }
 
     const pDescription = req.body.description || null;
-    if (!isValidPermissionDescription(pDescription)) {
+    if (!baseCheck(pDescription, PERMISSION_DESCRIPTION_RULES)) {
         res.status(400).json({
             status: "error",
             message: "Invalid description"
@@ -95,7 +110,11 @@ PermissionsRouter.post("/mg/permissions/get", ensureAuthenticated, requirePermis
     res.json({
         status: "success",
         data: {
-            permissions: permissions.map(perm => serializePermissionVariantDef(perm))
+            permissions: permissions.map(perm => serializePermissionVariantDef(perm)),
+            rules: {
+                name: PERMISSION_NAME_RULES,
+                description: PERMISSION_DESCRIPTION_RULES
+            }
         }
     });
 });
@@ -160,8 +179,11 @@ PermissionsRouter.post("/mg/permissions/search", ensureAuthenticated, requirePer
     res.json({
         status: "success",
         data: {
-            // todo: use normal serializer
-            permissions: permissions.map(serializePermissionVariantDef)
+            permissions: permissions.map(serializePermissionVariantDef),
+            rules: {
+                name: PERMISSION_NAME_RULES,
+                description: PERMISSION_DESCRIPTION_RULES
+            }
         }
     });
 });
@@ -207,7 +229,7 @@ PermissionsRouter.post("/mg/permission/up-name", ensureAuthenticated, requirePer
     }
 
     const pName = req.body.name;
-    if (!isValidPermissionName(pName)) {
+    if (!baseCheck(pName, PERMISSION_NAME_RULES)) {
         res.status(400).json({
             status: "error",
             message: "Invalid name"
@@ -251,7 +273,7 @@ PermissionsRouter.post("/mg/permission/up-description", ensureAuthenticated, req
     }
 
     const pDescription = req.body.description || null;
-    if (!isValidPermissionDescription(pDescription)) {
+    if (!baseCheck(pDescription, PERMISSION_DESCRIPTION_RULES)) {
         res.status(400).json({
             status: "error",
             message: "Invalid description"

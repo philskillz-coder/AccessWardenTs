@@ -1,12 +1,13 @@
 import Hashing from "@shared/Hashing";
 import logger from "@shared/Logger";
-import { isValidEmail, isValidPassword, isValidUsername } from "@shared/Validation";
+import { baseCheck } from "@shared/Validation";
 import { UserVariantAuth } from "@typings";
 import { AppDataSource } from "backend/database/data-source";
 import { Role, User } from "backend/database/entity";
 import { PagePermissions } from "backend/database/required-data";
 import { serializeRoleNormal, serializeUserVariantDef, serializeUserVariantPerms } from "backend/database/serializer";
 import { CRequest } from "backend/express";
+import { EMAIL_RULES, PASSWORD_RULES, USERNAME_RULES } from "backend/Rules";
 import hashidService from "backend/services/HashidService";
 import { getUserPermissions, PermNameComp } from "backend/services/PermissionsService";
 import { userTopPower } from "backend/services/RolesService";
@@ -19,6 +20,97 @@ import { ensureAuthenticated, parseNumber, requirePermissions, targetUserNotAdmi
 dotenv.config();
 
 const UsersRouter = Router();
+
+UsersRouter.post("/mg/users/create/info", ensureAuthenticated, requirePermissions(
+    PermNameComp, PagePermissions.AdminCreateUser
+), async (req: CRequest, res) => {
+    res.json({
+        status: "success",
+        data: {
+            rules: {
+                username: USERNAME_RULES,
+                email: EMAIL_RULES,
+                password: PASSWORD_RULES
+            }
+        }
+    });
+});
+
+UsersRouter.post("/mg/users/create", ensureAuthenticated, requirePermissions(
+    PermNameComp, PagePermissions.AdminCreateUser
+), async (req: CRequest, res) => {
+    const username = req.body.username;
+    const email = req.body.email;
+    const password = req.body.password;
+
+    if (username === undefined || email === undefined || password === undefined) {
+        res.status(400).json({
+            status: "error",
+            message: "Missing Data"
+        });
+        return;
+    }
+
+    if (!baseCheck(username, USERNAME_RULES)) {
+        res.status(400).json({
+            status: "error",
+            message: "Invalid Username"
+        });
+        return;
+    }
+
+    if (!baseCheck(email, EMAIL_RULES)) {
+        res.status(400).json({
+            status: "error",
+            message: "Invalid Email"
+        });
+        return;
+    }
+
+    if (!baseCheck(password, PASSWORD_RULES)) {
+        res.status(400).json({
+            status: "error",
+            message: "Invalid Password"
+        });
+        return;
+    }
+
+    const exists = await AppDataSource.getRepository(User).exist({
+        where: [
+            {
+                username: username
+            },
+            {
+                email: email
+            }
+        ]
+    });
+    if (exists) {
+        res.status(400).json({
+            status: "error",
+            message: "Username or Email is already taken"
+        });
+        return;
+    }
+
+    const salt = Hashing.generateSalt();
+    const passwordHash = Hashing.createHash(password, salt, process.env.HASH_PEPPER);
+    const user = new User();
+    user.username = username;
+    user.email = email;
+    user.passwordHash = passwordHash;
+    user.passwordSalt = salt;
+    user.loginSession = Hashing.generateSalt();
+
+    await AppDataSource.getRepository(User).save(user);
+    res.json({
+        status: "success",
+        message: "User created",
+        data: {
+            user: serializeUserVariantDef(user)
+        }
+    });
+});
 
 UsersRouter.post("/mg/users/login-as", ensureAuthenticated, requirePermissions(
     PermNameComp, PagePermissions.AdminLoginAs
@@ -90,7 +182,12 @@ UsersRouter.post("/mg/users/get", ensureAuthenticated, requirePermissions(
     res.json({
         status: "success",
         data: {
-            users: users.map(serializeUserVariantDef)
+            users: users.map(serializeUserVariantDef),
+            rules: {
+                username: USERNAME_RULES,
+                email: EMAIL_RULES,
+                password: PASSWORD_RULES
+            }
         }
     });
 });
@@ -173,7 +270,12 @@ UsersRouter.post("/mg/users/search", ensureAuthenticated, requirePermissions(
     res.json({
         status: "success",
         data: {
-            users: users.map(serializeUserVariantDef)
+            users: users.map(serializeUserVariantDef),
+            rules: {
+                username: USERNAME_RULES,
+                email: EMAIL_RULES,
+                password: PASSWORD_RULES
+            }
         }
     });
 });
@@ -190,7 +292,7 @@ UsersRouter.post("/mg/users/up-username", ensureAuthenticated, requirePermission
         return;
     }
 
-    if (!isValidUsername(username)) {
+    if (!baseCheck(username, USERNAME_RULES)) {
         res.status(400).json({
             status: "error",
             message: "Invalid Username"
@@ -246,7 +348,7 @@ UsersRouter.post("/mg/users/up-email", ensureAuthenticated, requirePermissions(
         return;
     }
 
-    if (!isValidEmail(email)) {
+    if (!baseCheck(email, EMAIL_RULES)) {
         res.status(400).json({
             status: "error",
             message: "Invalid Email"
@@ -301,7 +403,7 @@ async (req: CRequest, res) => {
         });
         return;
     }
-    if (!isValidPassword(password)) {
+    if (!baseCheck(password, PASSWORD_RULES)) {
         res.status(400).json({
             status: "error",
             message: "Invalid Password"

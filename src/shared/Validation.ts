@@ -31,54 +31,10 @@ export interface BaseRules {
     regex?: RegExp | null;
 }
 
-const EMAIL_RULES: BaseRules = {
-    maxLength: 255,
-    regex: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-};
-
-const USERNAME_RULES: BaseRules = {
-    minLength: 4,
-    maxLength: 20
-};
-
-const PASSWORD_RULES: BaseRules = {
-    minLength: 8,
-    maxLength: 64,
-    requireAnyUppercase: true,
-    requireAnyLowercase: true,
-    requireAnyNumeric: true,
-    requireAnySpecial: true
-};
-
-const PERMISSION_NAME_RULES: BaseRules = {
-    minLength: 1,
-    maxLength: 32
-};
-
-const PERMISSION_DESCRIPTION_RULES: BaseRules = {
-    nullable: true,
-    allowEmpty: true,
-    minLength: 0,
-    maxLength: 255,
-    allowWhitespace: true,
-    allowNewlines: true
-};
-
-const ROLE_NAME_RULES: BaseRules = {
-    minLength: 1,
-    maxLength: 32
-};
-
-const ROLE_DESCRIPTION_RULES: BaseRules = {
-    nullable: true,
-    allowEmpty: true,
-    minLength: 0,
-    maxLength: 255,
-    allowWhitespace: true,
-    allowNewlines: true
-};
-
-export function baseCheck(value: string, rules: BaseRules): boolean {
+export function baseCheck(value: string, rules?: BaseRules | null | undefined): boolean {
+    if (rules === null || rules === undefined) {
+        return true;
+    }
     const {
         nullable = false,
         minLength = null,
@@ -212,7 +168,10 @@ export function baseCheck(value: string, rules: BaseRules): boolean {
     return true;
 }
 
-export function getFirstCheckError(value: string, rules: BaseRules): string | null {
+export function getFirstCheckError(value: string, rules?: BaseRules | null | undefined): string | null {
+    if (rules === null || rules === undefined) {
+        return null;
+    }
     const {
         nullable = false,
         minLength = null,
@@ -344,32 +303,4 @@ export function getFirstCheckError(value: string, rules: BaseRules): string | nu
 
     // All checks passed
     return null;
-}
-
-export function isValidEmail(email: string): boolean {
-    return baseCheck(email, EMAIL_RULES);
-}
-
-export function isValidUsername(username: string): boolean {
-    return baseCheck(username, USERNAME_RULES);
-}
-
-export function isValidPassword(password: string): boolean {
-    return baseCheck(password, PASSWORD_RULES);
-}
-
-export function isValidPermissionName(name: string): boolean {
-    return baseCheck(name, PERMISSION_NAME_RULES);
-}
-
-export function isValidPermissionDescription(description: string): boolean {
-    return baseCheck(description, PERMISSION_DESCRIPTION_RULES);
-}
-
-export function isValidRoleName(name: string): boolean {
-    return baseCheck(name, ROLE_NAME_RULES);
-}
-
-export function isValidRoleDescription(description: string): boolean {
-    return baseCheck(description, ROLE_DESCRIPTION_RULES);
 }

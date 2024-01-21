@@ -1,7 +1,5 @@
 import { notificationService } from "@hope-ui/solid";
-import { isValidEmail } from "@shared/Mail";
-import { getFirstPasswordError } from "@shared/Password";
-import { getFirstUsernameError } from "@shared/Username";
+import { BaseRules, getFirstCheckError } from "@shared/Validation";
 import { A, useNavigate } from "@solidjs/router";
 import { UserVariantP } from "@typings";
 import { createEffect, createSignal,  Show } from "solid-js";
@@ -12,14 +10,17 @@ import { api } from "../utils";
 const Register = props => {
     const store: () => Store = props.store;
 
+    let emailRules: BaseRules = null;
     const [email, setEmail] = createSignal(""); // email of the user
     const [emailError, setEmailError] = createSignal(null); // email of the user
     const [emailValid, setEmailValid] = createSignal(false); // email of the user
 
+    let usernameRules: BaseRules = null;
     const [username, setUsername] = createSignal(""); // email of the user
     const [usernameError, setUsernameError] = createSignal(null); // email of the user
     const [usernameValid, setUsernameValid] = createSignal(false); // email of the user
 
+    let passwordRules: BaseRules = null;
     const [password, setPassword] = createSignal(""); // password of the user
     const [passwordError, setPasswordError] = createSignal(null); // password of the user
     const [passwordValid, setPasswordValid] = createSignal(false); // password of the user
@@ -27,8 +28,9 @@ const Register = props => {
     const navigate = useNavigate();
 
     createEffect(() => {
-        if (!isValidEmail(email())) {
-            setEmailError("Invalid email");
+        const err = getFirstCheckError(email(), emailRules);
+        if (err !== null) {
+            setEmailError(err);
             setEmailValid(false);
         } else {
             setEmailError(null);
@@ -37,10 +39,10 @@ const Register = props => {
     });
 
     createEffect(() => {
-        const anyUsernameError = getFirstUsernameError(username());
+        const err = getFirstCheckError(username(), usernameRules);
 
-        if (anyUsernameError !== null) {
-            setUsernameError(anyUsernameError);
+        if (err !== null) {
+            setUsernameError(err);
             setUsernameValid(false);
         } else {
             setUsernameError(null);
@@ -49,10 +51,10 @@ const Register = props => {
     });
 
     createEffect(() => {
-        const anyPasswordError = getFirstPasswordError(password());
+        const err = getFirstCheckError(password(), passwordRules);
 
-        if (anyPasswordError !== null) {
-            setPasswordError(anyPasswordError);
+        if (err !== null) {
+            setPasswordError(err);
             setPasswordValid(false);
         } else {
             setPasswordError(null);
@@ -84,6 +86,20 @@ const Register = props => {
             }
         });
     }
+
+    api.post("/api/auth/register/rules", {}, async res => {
+        if (res.hasError()) {
+            notificationService.show({
+                status: "danger",
+                title: "Error",
+                description: res.message
+            });
+        } else {
+            emailRules = res.data.email;
+            usernameRules = res.data.username;
+            passwordRules = res.data.password;
+        }
+    });
 
     return (
         <>

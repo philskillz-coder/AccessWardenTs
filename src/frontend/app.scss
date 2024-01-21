@@ -101,44 +101,33 @@ button, a, input, p, textarea, select {
     vertical-align: center;
 }
 
-button, input {
-    white-space: nowrap;
-    display: block;
-    border-radius: 5px;
-    
-    &:disabled {
-        &:hover {
-            cursor: default;
-        }
-    }
+button, input, a {
+    border-radius: 6px;
+    font-size: 14px !important;
+    line-height: 25px !important;
+}
+
+button, a {
+    text-align: center;
+    padding: 8px 12px;
 
     &:not(:disabled) {
         &:hover {
             filter: brightness(85%);
         }
     }
-}
 
-button {
     &:disabled {
-        background-color: var(--gray3);
-        
+        filter: brightness(85%);
         &:hover {
             cursor: default;
         }
     }
-
-    &:not(:disabled) {
-        &:hover {
-            cursor: pointer;
-        }
-    }
 }
 
-a {
-    &:disabled {
-        filter: brightness(85%);
-    }
+button, input {
+    white-space: nowrap;
+    display: block;
 }
 
 input {
@@ -167,6 +156,9 @@ input {
 
     &:disabled {
         cursor: default;
+        &:hover {
+            cursor: default;
+        }
         color: var(--gray2);
     }
 
@@ -178,8 +170,8 @@ input {
 
 textarea {
     font-size: 14px !important;
-    border-radius: 6px;
     color: var(--text);
+    border-radius: 6px;
     background: none;
     border: 1px solid var(--gray3);
 
@@ -210,7 +202,7 @@ label {
 .ui-scroller { // TODO: make ui-scroller work like ui-scroller-h
     height: 100%;
     border: 2px solid var(--gray2);
-    border-radius: 5px;
+    border-radius: 6px;
     padding: 5px;
     box-sizing: border-box;    
     white-space: nowrap;
@@ -239,7 +231,7 @@ label {
             justify-content: center; /* Horizontally center the content in case of multi-line content */
             text-align: center; /* Horizontally center the content */
             min-height: 50px;
-            border-radius: 5px;
+            border-radius: 6px;
             overflow: hidden;
 
             &>button {
@@ -320,7 +312,7 @@ label {
 .ui-scroller-h {
     height: 100%;
     border: 2px solid var(--gray2);
-    border-radius: 5px;
+    border-radius: 6px;
     padding: 5px;
     box-sizing: border-box;    
     white-space: nowrap;
@@ -339,7 +331,7 @@ label {
     &>.data-pin, &>.data-scroll {
         &>div {
             display: flex;
-            border-radius: 5px;
+            border-radius: 6px;
             overflow: hidden;
 
             &>button {
@@ -451,7 +443,7 @@ label {
 
     width: 100%;
     height: 40px;
-    border-radius: 5px;
+    border-radius: 6px;
     
     &.border {
         border: 1px solid var(--gray2) !important;
@@ -514,7 +506,7 @@ label {
         }
 
         &:only-child {
-            border-radius: 5px;
+            border-radius: 6px;
         }
     }
 
@@ -526,22 +518,6 @@ label {
 
     &>input {
         z-index: 1;
-    }
-
-    &>button, &>a {
-        text-align: center;
-        padding: 8px 12px;
-        font-size: 14px;
-        line-height: 25px;
-
-        &:not(:disabled) {
-            &:hover {
-                filter: brightness(85%);
-            }
-            &.active {
-                background-color: var(--gray3);
-            }
-        }
     }
 }
 

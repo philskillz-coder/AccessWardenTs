@@ -1,9 +1,10 @@
-import { isValidRoleDescription, isValidRoleName } from "@shared/Validation";
+import { baseCheck } from "@shared/Validation";
 import { AppDataSource } from "backend/database/data-source";
 import { Permission, Role, RolePermission, User } from "backend/database/entity";
 import { PagePermissions } from "backend/database/required-data";
 import { serializePermissionNormal, serializeRoleVariantDef } from "backend/database/serializer";
 import { CRequest } from "backend/express";
+import { ROLE_DESCRIPTION_RULES, ROLE_NAME_RULES } from "backend/Rules";
 import hashidService from "backend/services/HashidService";
 import { getUserPermissions, hasPermissionsFrom, PermIdComp, PermNameComp } from "backend/services/PermissionsService";
 import { userTopPower } from "backend/services/RolesService";
@@ -12,6 +13,20 @@ import { ILike } from "typeorm";
 
 import { ensureAuthenticated, parseNumber, requirePermissions, targetRoleValid, validateMfaToken } from "./tools";
 const RolesRouter = Router();
+
+RolesRouter.post("/mg/roles/create/info", ensureAuthenticated, requirePermissions(
+    PermNameComp, PagePermissions.AdminCreateRole
+), async (req: CRequest, res) => {
+    res.json({
+        status: "success",
+        data: {
+            rules: {
+                name: ROLE_NAME_RULES,
+                description: ROLE_DESCRIPTION_RULES
+            }
+        }
+    });
+});
 
 RolesRouter.post("/mg/roles/create", ensureAuthenticated, requirePermissions(
     PermNameComp, PagePermissions.AdminCreateRole
@@ -38,7 +53,7 @@ RolesRouter.post("/mg/roles/create", ensureAuthenticated, requirePermissions(
     }
 
     const rName = req.body.name;
-    if (!isValidRoleName(rName)) {
+    if (!baseCheck(rName, ROLE_NAME_RULES)) {
         res.status(400).json({
             status: "error",
             message: "Invalid name"
@@ -47,7 +62,7 @@ RolesRouter.post("/mg/roles/create", ensureAuthenticated, requirePermissions(
     }
 
     const rDescription = req.body.description || null;
-    if (!isValidRoleDescription(rDescription)) {
+    if (!baseCheck(rDescription, ROLE_DESCRIPTION_RULES)) {
         res.status(400).json({
             status: "error",
             message: "Invalid description"
@@ -107,7 +122,11 @@ RolesRouter.post("/mg/roles/get", ensureAuthenticated, requirePermissions(
     res.json({
         status: "success",
         data: {
-            roles: roles.map(serializeRoleVariantDef)
+            roles: roles.map(serializeRoleVariantDef),
+            rules: {
+                name: ROLE_NAME_RULES,
+                description: ROLE_DESCRIPTION_RULES
+            }
         }
     });
 });
@@ -182,7 +201,11 @@ RolesRouter.post("/mg/roles/search", ensureAuthenticated, requirePermissions(
     res.json({
         status: "success",
         data: {
-            roles: roles.map(serializeRoleVariantDef)
+            roles: roles.map(serializeRoleVariantDef),
+            rules: {
+                name: ROLE_NAME_RULES,
+                description: ROLE_DESCRIPTION_RULES
+            }
         }
     });
 });
@@ -242,7 +265,7 @@ RolesRouter.post("/mg/roles/up-name", ensureAuthenticated, requirePermissions(
     }
 
     const rName = req.body.name;
-    if (!isValidRoleName(rName)) {
+    if (!baseCheck(rName, ROLE_NAME_RULES)) {
         res.status(400).json({
             status: "error",
             message: "Invalid name"
@@ -294,7 +317,7 @@ RolesRouter.post("/mg/roles/up-description", ensureAuthenticated, requirePermiss
     }
 
     const rDescription = req.body.description;
-    if (!isValidRoleDescription(rDescription)) {
+    if (!baseCheck(rDescription, ROLE_DESCRIPTION_RULES)) {
         res.status(400).json({
             status: "error",
             message: "Invalid description"

@@ -1,7 +1,8 @@
 import Hashing from "@shared/Hashing";
 import logger from "@shared/Logger";
-import { isValidEmail, isValidPassword, isValidUsername } from "@shared/Validation";
+import { baseCheck } from "@shared/Validation";
 import { ApiResponseFlags, UserVariantAuth } from "@typings";
+import { EMAIL_RULES, PASSWORD_RULES, USERNAME_RULES } from "backend/Rules";
 import dotenv from "dotenv";
 import { Router } from "express";
 import speakeasy from "speakeasy";
@@ -118,6 +119,19 @@ ApiRouter.post("/auth/logout", ensureAuthenticated, (req, res) => {
 });
 
 
+ApiRouter.post("/auth/register/info", async function(req: CRequest, res) {
+    res.json({
+        status: "success",
+        data: {
+            rules: {
+                username: USERNAME_RULES,
+                email: EMAIL_RULES,
+                password: PASSWORD_RULES
+            }
+        }
+    });
+});
+
 ApiRouter.post("/auth/register", async function(req: CRequest, res) {
     // check if username or email is already taken
 
@@ -129,15 +143,15 @@ ApiRouter.post("/auth/register", async function(req: CRequest, res) {
         return res.status(400).json({ status: "error", message: "Missing required fields" });
     }
 
-    if (!isValidUsername(username)) {
+    if (!baseCheck(username, USERNAME_RULES)) {
         return res.status(400).json({ status: "error", message: "Invalid username" });
     }
 
-    if (!isValidEmail(email)) {
+    if (!baseCheck(email, EMAIL_RULES)) {
         return res.status(400).json({ status: "error", message: "Invalid email" });
     }
 
-    if (!isValidPassword(password)) {
+    if (!baseCheck(password, PASSWORD_RULES)) {
         return res.status(400).json({ status: "error", message: "Password is not safe enough" });
     }
 
@@ -288,7 +302,7 @@ ApiRouter.post("/user/update/mail", ensureAuthenticated, validateMfaToken, async
 
     // TODO: global: same response when missing data: "Missing required fields"
 
-    if (!isValidEmail(email)) {
+    if (!baseCheck(email, EMAIL_RULES)) {
         return res.status(400).json({ status: "error", message: "Invalid email" });
     }
 
@@ -321,7 +335,7 @@ ApiRouter.post("/user/update/username", ensureAuthenticated, validateMfaToken, a
         return res.status(400).json({ status: "error", message: "Missing Data" });
     }
 
-    if (!isValidUsername(req.body.username)) {
+    if (!baseCheck(username, USERNAME_RULES)) {
         return res.status(400).json({ status: "error", message: "Invalid username" });
     }
 
@@ -355,7 +369,7 @@ ApiRouter.post("/user/update/password", ensureAuthenticated, validateMfaToken, a
         return res.status(400).json({ status: "error", message: "(Old) Password doesn't match" });
     }
 
-    if (!isValidPassword(newPassword)) {
+    if (!baseCheck(newPassword, PASSWORD_RULES)) {
         return res.status(400).json({ status: "error", message: "Password is not safe enough" });
     }
 

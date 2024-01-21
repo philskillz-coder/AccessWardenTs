@@ -87,6 +87,7 @@ const Account = props => {
         setNewPassword(null);
     }
 
+    // TODO: validate all inputs
     function updateEmail() {
         api.post("/api/user/update/mail", { email: newEmail(), curPassword: curPassword() }, async res => {
             if (res.hasError()) {
