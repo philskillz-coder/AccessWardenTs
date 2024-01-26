@@ -28,7 +28,7 @@ export interface BaseRules {
     minLowercaseChars?: number | null;
     maxLowercaseChars?: number | null;
 
-    regex?: RegExp | null;
+    regex?: string | RegExp | null;
 }
 
 export function baseCheck(value: string, rules?: BaseRules | null | undefined): boolean {
@@ -64,8 +64,6 @@ export function baseCheck(value: string, rules?: BaseRules | null | undefined): 
         maxUppercaseChars = null,
         minLowercaseChars = null,
         maxLowercaseChars = null,
-
-        regex = null
     } = rules;
 
     if (nullable !== null) {
@@ -160,7 +158,10 @@ export function baseCheck(value: string, rules?: BaseRules | null | undefined): 
         return false;
     }
 
-    if (regex !== null && !rules.regex.test(value)) {
+    if (rules.regex !== null && typeof rules.regex === "string") {
+        rules.regex = new RegExp(rules.regex);
+    }
+    if (rules.regex !== null && !(<RegExp>rules.regex).test(value)) {
         return false;
     }
 
@@ -201,8 +202,6 @@ export function getFirstCheckError(value: string, rules?: BaseRules | null | und
         maxUppercaseChars = null,
         minLowercaseChars = null,
         maxLowercaseChars = null,
-
-        regex = null
     } = rules;
 
     if (nullable !== null) {
@@ -241,7 +240,7 @@ export function getFirstCheckError(value: string, rules?: BaseRules | null | und
         return "Value cannot contain non-latin characters (äöüÄÖÜß).";
     }
 
-    if (allowEmoji !== null && !allowEmoji && /\p{Emoji}/u.test(value)) {
+    if (allowEmoji !== null && !allowEmoji && /\p{Extended_Pictographic}/u.test(value)) {
         return "Value cannot contain emoji.";
     }
 
@@ -297,7 +296,11 @@ export function getFirstCheckError(value: string, rules?: BaseRules | null | und
         return `Value must contain at most ${maxLowercaseChars} lowercase (a-z) characters.`;
     }
 
-    if (regex !== null && !rules.regex.test(value)) {
+    if (rules.regex !== null && typeof rules.regex === "string") {
+        rules.regex = new RegExp(rules.regex);
+    }
+    console.log(rules.regex);
+    if (rules.regex !== null && !(<RegExp>rules.regex).test(value)) {
         return "Value does not match the required pattern.";
     }
 

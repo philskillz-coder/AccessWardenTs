@@ -2,7 +2,8 @@ import Hashing from "@shared/Hashing";
 import logger from "@shared/Logger";
 import { baseCheck } from "@shared/Validation";
 import { ApiResponseFlags, UserVariantAuth } from "@typings";
-import { EMAIL_RULES, PASSWORD_RULES, USERNAME_RULES } from "backend/Rules";
+import { PagePermissions } from "backend/database/required-data";
+import { EMAIL_RULES, PASSWORD_RULES, PERMISSION_DESCRIPTION_RULES, PERMISSION_NAME_RULES, ROLE_DESCRIPTION_RULES, ROLE_NAME_RULES, USERNAME_RULES } from "backend/Rules";
 import dotenv from "dotenv";
 import { Router } from "express";
 import speakeasy from "speakeasy";
@@ -11,7 +12,7 @@ import { AppDataSource } from "../database/data-source";
 import { Role, User } from "../database/entity";
 import { serializeUserVariantPerms } from "../database/serializer";
 import { CRequest } from "../express";
-import { getUserPermissions } from "../services/PermissionsService";
+import { getUserPermissions, hasPermissions, PermNameComp } from "../services/PermissionsService";
 import temporaryValueService from "../services/TemporaryValueService";
 import PermissionsRouter from "./permissions_api";
 import RolesRouter from "./roles_api";
@@ -387,6 +388,60 @@ ApiRouter.post("/user/update/password", ensureAuthenticated, validateMfaToken, a
         }
     });
     return res.json({ status: "success", message: "Password updated" });
+});
+
+const AVAILABLE_RULES = {
+    username: {
+        permission: null,
+        rule: USERNAME_RULES
+    },
+    email: {
+        permission: null,
+        rule: EMAIL_RULES
+    },
+    password: {
+        permission: null,
+        rule: PASSWORD_RULES
+    },
+    permission_name: {
+        permission: PagePermissions.AdminViewPermissions,
+        rule: PERMISSION_NAME_RULES
+    },
+    permission_description: {
+        permission: PagePermissions.AdminViewPermissions,
+        rule: PERMISSION_DESCRIPTION_RULES
+    },
+    role_name: {
+        permission: PagePermissions.AdminViewRoles,
+        rule: ROLE_NAME_RULES
+    },
+    role_description: {
+        permission: PagePermissions.AdminViewRoles,
+        rule: ROLE_DESCRIPTION_RULES
+    }
+};
+
+ApiRouter.post("/common/rules", async function(req: CRequest, res) {
+    const user = <User>req.user;
+    const rules: string[] = req.body.rules;
+    const result = {};
+
+    for (const rule of rules) {
+        if (!AVAILABLE_RULES[rule]) {
+            result[rule] = null;
+        }
+        if (AVAILABLE_RULES[rule].permission && !(await hasPermissions(user.id, PermNameComp, AVAILABLE_RULES[rule].permission))) {
+            result[rule] = null;
+        }
+        result[rule] = {
+            ...AVAILABLE_RULES[rule].rule,
+            regex: AVAILABLE_RULES[rule].rule.regex?.source
+        };
+    }
+
+    res.json({ status: "success", data: {
+        rules: result
+    } });
 });
 
 export default ApiRouter;

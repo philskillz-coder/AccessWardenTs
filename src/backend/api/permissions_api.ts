@@ -25,13 +25,7 @@ PermissionsRouter.post("/mg/permissions/create/info", ensureAuthenticated, requi
     PermNameComp, PagePermissions.AdminCreatePermission
 ), async (req: CRequest, res) => {
     res.json({
-        status: "success",
-        data: {
-            rules: {
-                name: PERMISSION_NAME_RULES,
-                description: PERMISSION_DESCRIPTION_RULES
-            }
-        }
+        status: "success"
     });
 });
 
@@ -110,11 +104,7 @@ PermissionsRouter.post("/mg/permissions/get", ensureAuthenticated, requirePermis
     res.json({
         status: "success",
         data: {
-            permissions: permissions.map(perm => serializePermissionVariantDef(perm)),
-            rules: {
-                name: PERMISSION_NAME_RULES,
-                description: PERMISSION_DESCRIPTION_RULES
-            }
+            permissions: permissions.map(perm => serializePermissionVariantDef(perm))
         }
     });
 });
@@ -179,11 +169,7 @@ PermissionsRouter.post("/mg/permissions/search", ensureAuthenticated, requirePer
     res.json({
         status: "success",
         data: {
-            permissions: permissions.map(serializePermissionVariantDef),
-            rules: {
-                name: PERMISSION_NAME_RULES,
-                description: PERMISSION_DESCRIPTION_RULES
-            }
+            permissions: permissions.map(serializePermissionVariantDef)
         }
     });
 });

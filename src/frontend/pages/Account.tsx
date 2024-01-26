@@ -1,28 +1,30 @@
 import { ModalConfirmation } from "@components/ModalConfirmation";
-import { Button, FormControl, FormLabel, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, notificationService } from "@hope-ui/solid";
+import { Button, FormControl, FormHelperText, FormLabel, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, notificationService } from "@hope-ui/solid";
 import Store from "frontend/Store";
 import QRCode from "qrcode";
 import { BiSolidPencil } from "solid-icons/bi";
 import { createSignal, Show } from "solid-js";
 
-import { api } from "../utils";
+import { api, Validator } from "../utils";
 
 const Account = props => {
     const store: () => Store = props.store;
+    const validator = new Validator("username", "email", "password");
+
     const [editingMfa, setShowMfa] = createSignal(false);
     const [mfaData, setMfaData] = createSignal<{ secret_base32, secret_url }>(null);
     const [mfaCode, setMfaCode] = createSignal(null);
     const [disableMfaConfirmationRequired, setDisableMfaConfirmationRequired] = createSignal(false);
 
     const [editingUsername, setEditingUsername] = createSignal(false);
-    const [newUsername, setNewUsername] = createSignal(null);
+    const [newUsername, setNewUsername, newUsernameError] = validator.useValidator("username");
 
     const [editingEmail, setEditingEmail] = createSignal(false);
-    const [newEmail, setNewEmail] = createSignal(null);
+    const [newEmail, setNewEmail, newEmailError] = validator.useValidator("email");
 
     const [editingPassword, setEditingPassword] = createSignal(false);
     const [curPassword, setCurPassword] = createSignal(null);
-    const [newPassword, setNewPassword] = createSignal(null);
+    const [newPassword, setNewPassword, newPasswordError] = validator.useValidator("password");
 
     function setupMfa() {
         api.post("/api/mfa/setup", {}, async res => {
@@ -169,15 +171,26 @@ const Account = props => {
                             <ModalBody>
                                 <FormControl mb="$4">
                                     <FormLabel>Email Address</FormLabel>
-                                    <Input id="acc-new-mail" type="mail" placeholder="Enter new email address" autocomplete="off" spellcheck={false} onChange={e => setNewEmail(e.target.value)}/>
+                                    <Input
+                                        id="acc-new-mail"
+                                        type="mail"
+                                        placeholder="Enter new email address"
+                                        autocomplete="off"
+                                        spellcheck={false}
+                                        onInput={e => setNewEmail(e.target.value)}
+                                        invalid={newEmailError() !== null}
+                                    />
+                                    <Show when={newEmailError() !== null}>
+                                        <FormHelperText color="red">{newEmailError()}</FormHelperText>
+                                    </Show>
                                 </FormControl>
                                 <FormControl mb="$4">
                                     <FormLabel>Current Password</FormLabel>
-                                    <Input id="acc-new-mail-cur-password" type="password" placeholder="Enter current password" autocomplete="current-password" spellcheck={false} onChange={e => setCurPassword(e.target.value)}/>
+                                    <Input id="acc-new-mail-cur-password" type="password" placeholder="Enter current password" autocomplete="current-password" spellcheck={false} onInput={e => setCurPassword(e.target.value)}/>
                                 </FormControl>
                             </ModalBody>
                             <ModalFooter>
-                                <Button onClick={updateEmail}>Update</Button>
+                                <Button onClick={updateEmail} disabled={newEmailError() !== null}>Update</Button>
                                 <Button id="acc-new-mail-cancel" onClick={closeEmailEditor} ms="auto" colorScheme={"primary"}>Cancel</Button>
                             </ModalFooter>
                         </ModalContent>
@@ -198,11 +211,14 @@ const Account = props => {
                             <ModalBody>
                                 <FormControl mb="$4">
                                     <FormLabel>Username</FormLabel>
-                                    <Input id="acc-new-username" type="text" placeholder="Enter new username" autocomplete="off" spellcheck={false} onChange={e => setNewUsername(e.target.value)}/>
+                                    <Input id="acc-new-username" type="text" placeholder="Enter new username" autocomplete="off" spellcheck={false} onInput={e => setNewUsername(e.target.value)} invalid={newUsernameError() !== null}/>
+                                    <Show when={newUsernameError() !== null}>
+                                        <FormHelperText color="red">{newUsernameError()}</FormHelperText>
+                                    </Show>
                                 </FormControl>
                             </ModalBody>
                             <ModalFooter>
-                                <Button onClick={updateUsername}>Update</Button>
+                                <Button onClick={updateUsername} disabled={newUsernameError() !== null}>Update</Button>
                                 <Button id="acc-new-username-cancel" onClick={closeUsernameEditor} ms="auto" colorScheme={"primary"}>Cancel</Button>
                             </ModalFooter>
                         </ModalContent>
@@ -223,15 +239,18 @@ const Account = props => {
                             <ModalBody>
                                 <FormControl mb="$4">
                                     <FormLabel>Current Password</FormLabel>
-                                    <Input id="acc-cur-password" type="password" placeholder="Enter current password" autocomplete="current-password" spellcheck={false} onChange={e => setCurPassword(e.target.value)}/>
+                                    <Input id="acc-cur-password" type="password" placeholder="Enter current password" autocomplete="current-password" spellcheck={false} onInput={e => setCurPassword(e.target.value)}/>
                                 </FormControl>
                                 <FormControl mb="$4">
                                     <FormLabel>New Password</FormLabel>
-                                    <Input id="acc-new-password" type="password" placeholder="Enter new password" autocomplete="new-password" spellcheck={false} onChange={e => setNewPassword(e.target.value)}/>
+                                    <Input id="acc-new-password" type="password" placeholder="Enter new password" autocomplete="new-password" spellcheck={false} onInput={e => setNewPassword(e.target.value)} invalid={newPasswordError() !== null}/>
+                                    <Show when={newPasswordError() !== null}>
+                                        <FormHelperText color="red">{newPasswordError()}</FormHelperText>
+                                    </Show>
                                 </FormControl>
                             </ModalBody>
                             <ModalFooter>
-                                <Button onClick={updatePassword}>Update</Button>
+                                <Button onClick={updatePassword} disabled={newPasswordError() !== null}>Update</Button>
                                 <Button id="acc-new-password-cancel" onClick={closePasswordEditor} ms="auto" colorScheme={"primary"}>Cancel</Button>
                             </ModalFooter>
                         </ModalContent>
@@ -260,7 +279,7 @@ const Account = props => {
 
                                     <FormControl  mb="$4">
                                         <FormLabel>2FA Code</FormLabel>
-                                        <Input id="acc-mfa-code-validation" placeholder="Verify your 2FA code" onChange={e => setMfaCode(e.target.value)}/>
+                                        <Input id="acc-mfa-code-validation" placeholder="Verify your 2FA code" onInput={e => setMfaCode(e.target.value)}/>
                                     </FormControl>
                                 </ModalBody>
                                 <ModalFooter>

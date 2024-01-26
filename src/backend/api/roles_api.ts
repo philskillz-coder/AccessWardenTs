@@ -18,13 +18,7 @@ RolesRouter.post("/mg/roles/create/info", ensureAuthenticated, requirePermission
     PermNameComp, PagePermissions.AdminCreateRole
 ), async (req: CRequest, res) => {
     res.json({
-        status: "success",
-        data: {
-            rules: {
-                name: ROLE_NAME_RULES,
-                description: ROLE_DESCRIPTION_RULES
-            }
-        }
+        status: "success"
     });
 });
 
@@ -122,11 +116,7 @@ RolesRouter.post("/mg/roles/get", ensureAuthenticated, requirePermissions(
     res.json({
         status: "success",
         data: {
-            roles: roles.map(serializeRoleVariantDef),
-            rules: {
-                name: ROLE_NAME_RULES,
-                description: ROLE_DESCRIPTION_RULES
-            }
+            roles: roles.map(serializeRoleVariantDef)
         }
     });
 });
@@ -201,11 +191,7 @@ RolesRouter.post("/mg/roles/search", ensureAuthenticated, requirePermissions(
     res.json({
         status: "success",
         data: {
-            roles: roles.map(serializeRoleVariantDef),
-            rules: {
-                name: ROLE_NAME_RULES,
-                description: ROLE_DESCRIPTION_RULES
-            }
+            roles: roles.map(serializeRoleVariantDef)
         }
     });
 });

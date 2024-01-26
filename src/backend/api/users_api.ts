@@ -25,14 +25,7 @@ UsersRouter.post("/mg/users/create/info", ensureAuthenticated, requirePermission
     PermNameComp, PagePermissions.AdminCreateUser
 ), async (req: CRequest, res) => {
     res.json({
-        status: "success",
-        data: {
-            rules: {
-                username: USERNAME_RULES,
-                email: EMAIL_RULES,
-                password: PASSWORD_RULES
-            }
-        }
+        status: "success"
     });
 });
 
@@ -182,12 +175,7 @@ UsersRouter.post("/mg/users/get", ensureAuthenticated, requirePermissions(
     res.json({
         status: "success",
         data: {
-            users: users.map(serializeUserVariantDef),
-            rules: {
-                username: USERNAME_RULES,
-                email: EMAIL_RULES,
-                password: PASSWORD_RULES
-            }
+            users: users.map(serializeUserVariantDef)
         }
     });
 });
@@ -270,12 +258,7 @@ UsersRouter.post("/mg/users/search", ensureAuthenticated, requirePermissions(
     res.json({
         status: "success",
         data: {
-            users: users.map(serializeUserVariantDef),
-            rules: {
-                username: USERNAME_RULES,
-                email: EMAIL_RULES,
-                password: PASSWORD_RULES
-            }
+            users: users.map(serializeUserVariantDef)
         }
     });
 });

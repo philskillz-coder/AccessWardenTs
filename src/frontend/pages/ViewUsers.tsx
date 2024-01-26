@@ -4,7 +4,6 @@ import { ModalConfirmation } from "@components/ModalConfirmation";
 import { ShowIfPermission } from "@components/ShowIfPermission";
 import { Avatar, Button, FormControl, FormLabel, HStack, Modal, ModalBody, ModalFooter, ModalHeader, Spinner, Tag, VStack } from "@hope-ui/solid";
 import { Input, ModalCloseButton, ModalContent, ModalOverlay, notificationService } from "@hope-ui/solid";
-import { BaseRules } from "@shared/Validation";
 import { useNavigate } from "@solidjs/router";
 import { ApiResponseFlags, UserVariantDef } from "@typings";
 import { format } from "date-fns";
@@ -29,15 +28,12 @@ function ViewUsers(props) {
     const [selectedUserRoles, setSelectedUserRoles] = createSignal<_Role[] | null>(null);
     const [displayedUserRoles, setDisplayedUserRoles] = createSignal<_Role[] | null>(null);
 
-    let emailRules: BaseRules = null;
     const [editingEmail, setEditingEmail] = createSignal(false);
     const [newEmail, setNewEmail] = createSignal<string | null>(null);
 
-    let usernameRules: BaseRules = null;
     const [editingUsername, setEditingUsername] = createSignal(false);
     const [newUsername, setNewUsername] = createSignal<string | null>(null);
 
-    let passwordRules: BaseRules = null;
     const [editingPassword, setEditingPassword] = createSignal(false);
     const [newPassword, setNewPassword] = createSignal<string | null>(null);
 
@@ -104,10 +100,6 @@ function ViewUsers(props) {
             if (!selectedUser() && res.data.users.length > 0) { // only select first user if there arent
                 setSelectedUser(res.data.users[0]);
             }
-
-            usernameRules = res.data.rules.username;
-            emailRules = res.data.rules.email;
-            passwordRules = res.data.rules.password;
         });
     }
 
@@ -158,9 +150,6 @@ function ViewUsers(props) {
                 if (!selectedUser() && res.data.users.length > 0) { // only select first user if there arent
                     setSelectedUser(res.data.users[0]);
                 }
-                usernameRules = res.data.rules.username;
-                emailRules = res.data.rules.email;
-                passwordRules = res.data.rules.password;
             });
         }
     }
@@ -577,15 +566,15 @@ function ViewUsers(props) {
                                 <ModalBody>
                                     <FormControl mb="$4">
                                         <FormLabel>Username</FormLabel>
-                                        <Input id="mg-user-new-user-username" type="text" placeholder="Enter username" autocomplete="off" spellcheck={false} onChange={e => setNewUsername(e.target.value)}/>
+                                        <Input id="mg-user-new-user-username" type="text" placeholder="Enter username" autocomplete="off" spellcheck={false} onInput={e => setNewUsername(e.target.value)}/>
                                     </FormControl>
                                     <FormControl mb="$4">
                                         <FormLabel>Email Address</FormLabel>
-                                        <Input id="mg-user-new-user-mail" type="mail" placeholder="Enter email address" autocomplete="off" spellcheck={false} onChange={e => setNewEmail(e.target.value)}/>
+                                        <Input id="mg-user-new-user-mail" type="mail" placeholder="Enter email address" autocomplete="off" spellcheck={false} onInput={e => setNewEmail(e.target.value)}/>
                                     </FormControl>
                                     <FormControl mb="$4">
                                         <FormLabel>Password</FormLabel>
-                                        <Input id="mg-user-new-user-password" type="password" placeholder="Enter password" autocomplete="new-password" spellcheck={false} onChange={e => setNewPassword(e.target.value)}/>
+                                        <Input id="mg-user-new-user-password" type="password" placeholder="Enter password" autocomplete="new-password" spellcheck={false} onInput={e => setNewPassword(e.target.value)}/>
                                     </FormControl>
                                 </ModalBody>
                                 <ModalFooter>
@@ -674,7 +663,7 @@ function ViewUsers(props) {
                                                 <ModalBody>
                                                     <FormControl mb="$4">
                                                         <FormLabel>Email Address</FormLabel>
-                                                        <Input id="mg-user-new-mail" type="mail" placeholder="Enter new email address" autocomplete="off" spellcheck={false} onChange={e => setNewEmail(e.target.value)}/>
+                                                        <Input id="mg-user-new-mail" type="mail" placeholder="Enter new email address" autocomplete="off" spellcheck={false} onInput={e => setNewEmail(e.target.value)}/>
                                                     </FormControl>
                                                 </ModalBody>
                                                 <ModalFooter>
@@ -704,7 +693,7 @@ function ViewUsers(props) {
                                                 <ModalBody>
                                                     <FormControl mb="$4">
                                                         <FormLabel>Username</FormLabel>
-                                                        <Input id="mg-user-new-username" type="text" placeholder="Enter new username" autocomplete="off" spellcheck={false} onChange={e => setNewUsername(e.target.value)}/>
+                                                        <Input id="mg-user-new-username" type="text" placeholder="Enter new username" autocomplete="off" spellcheck={false} onInput={e => setNewUsername(e.target.value)}/>
                                                     </FormControl>
                                                 </ModalBody>
                                                 <ModalFooter>
@@ -734,7 +723,7 @@ function ViewUsers(props) {
                                                 <ModalBody>
                                                     <FormControl mb="$4">
                                                         <FormLabel>New Password</FormLabel>
-                                                        <Input id="mg-user-new-password" type="password" placeholder="Enter new password" autocomplete="new-password" spellcheck={false} onChange={e => setNewPassword(e.target.value)}/>
+                                                        <Input id="mg-user-new-password" type="password" placeholder="Enter new password" autocomplete="new-password" spellcheck={false} onInput={e => setNewPassword(e.target.value)}/>
                                                     </FormControl>
                                                 </ModalBody>
                                                 <ModalFooter>
