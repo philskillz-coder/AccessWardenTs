@@ -201,4 +201,3 @@ getUsers.call({
     const data = res.data;
     console.log(data.users);
 });
-
