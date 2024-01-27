@@ -35,35 +35,36 @@ export function baseCheck(value: string, rules?: BaseRules | null | undefined): 
     if (rules === null || rules === undefined) {
         return true;
     }
+
     const {
-        nullable = false,
-        minLength = null,
-        maxLength = null,
+        nullable,
+        minLength,
+        maxLength,
 
-        allowEmpty = false,
-        allowWhitespace = false,
-        allowNewlines = false,
-        allowSpecialChars = true,
-        allowNonLatinChars = true,
-        allowEmoji = false,
+        allowEmpty,
+        allowWhitespace,
+        allowNewlines,
+        allowSpecialChars,
+        allowNonLatinChars,
+        allowEmoji,
 
-        requireOnlyAlphaNumeric = false,
+        requireOnlyAlphaNumeric,
 
-        requireAnyUppercase = false,
-        requireAnyLowercase = false,
-        requireAnyNumeric = false,
-        requireAnySpecial = false,
+        requireAnyUppercase,
+        requireAnyLowercase,
+        requireAnyNumeric,
+        requireAnySpecial,
 
-        minSpecialChars = null,
-        maxSpecialChars = null,
+        minSpecialChars,
+        maxSpecialChars,
 
-        minNumericChars = null,
-        maxNumericChars = null,
+        minNumericChars,
+        maxNumericChars,
 
-        minUppercaseChars = null,
-        maxUppercaseChars = null,
-        minLowercaseChars = null,
-        maxLowercaseChars = null,
+        minUppercaseChars,
+        maxUppercaseChars,
+        minLowercaseChars,
+        maxLowercaseChars,
     } = rules;
 
     if (nullable !== null) {
@@ -102,7 +103,7 @@ export function baseCheck(value: string, rules?: BaseRules | null | undefined): 
         return false;
     }
 
-    if (allowEmoji !== null && !allowEmoji && /\p{Emoji}/u.test(value)) {
+    if (allowEmoji !== null && !allowEmoji && /\p{Extended_Pictographic}/u.test(value)) {
         return false;
     }
 
@@ -158,10 +159,11 @@ export function baseCheck(value: string, rules?: BaseRules | null | undefined): 
         return false;
     }
 
-    if (rules.regex !== null && typeof rules.regex === "string") {
+    if (rules.regex && typeof rules.regex === "string") {
         rules.regex = new RegExp(rules.regex);
     }
-    if (rules.regex !== null && !(<RegExp>rules.regex).test(value)) {
+
+    if (rules.regex && !(<RegExp>rules.regex).test(value)) {
         return false;
     }
 
@@ -174,34 +176,34 @@ export function getFirstCheckError(value: string, rules?: BaseRules | null | und
         return null;
     }
     const {
-        nullable = false,
-        minLength = null,
-        maxLength = null,
+        nullable,
+        minLength,
+        maxLength,
 
-        allowEmpty = false,
-        allowWhitespace = false,
-        allowNewlines = false,
-        allowSpecialChars = true,
-        allowNonLatinChars = true,
-        allowEmoji = false,
+        allowEmpty,
+        allowWhitespace,
+        allowNewlines,
+        allowSpecialChars,
+        allowNonLatinChars,
+        allowEmoji,
 
-        requireOnlyAlphaNumeric = false,
+        requireOnlyAlphaNumeric,
 
-        requireAnyUppercase = false,
-        requireAnyLowercase = false,
-        requireAnyNumeric = false,
-        requireAnySpecial = false,
+        requireAnyUppercase,
+        requireAnyLowercase,
+        requireAnyNumeric,
+        requireAnySpecial,
 
-        minSpecialChars = null,
-        maxSpecialChars = null,
+        minSpecialChars,
+        maxSpecialChars,
 
-        minNumericChars = null,
-        maxNumericChars = null,
+        minNumericChars,
+        maxNumericChars,
 
-        minUppercaseChars = null,
-        maxUppercaseChars = null,
-        minLowercaseChars = null,
-        maxLowercaseChars = null,
+        minUppercaseChars,
+        maxUppercaseChars,
+        minLowercaseChars,
+        maxLowercaseChars,
     } = rules;
 
     if (nullable !== null) {
@@ -296,11 +298,11 @@ export function getFirstCheckError(value: string, rules?: BaseRules | null | und
         return `Value must contain at most ${maxLowercaseChars} lowercase (a-z) characters.`;
     }
 
-    if (rules.regex !== null && typeof rules.regex === "string") {
+    if (rules.regex && typeof rules.regex === "string") {
         rules.regex = new RegExp(rules.regex);
     }
-    console.log(rules.regex);
-    if (rules.regex !== null && !(<RegExp>rules.regex).test(value)) {
+
+    if (rules.regex && !(<RegExp>rules.regex).test(value)) {
         return "Value does not match the required pattern.";
     }
 

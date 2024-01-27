@@ -1,7 +1,7 @@
 import { ApiResponse, ApiResponseFlags } from "@typings";
 
 /* eslint-disable no-unused-vars */
-type CANCEL_CALLBACK = (err?: any) => Promise<any | void>;
+
 type Opts = {
     url: string;
     method: "GET" | "POST" | "PUT" | "DELETE";
@@ -165,10 +165,10 @@ export class ApiInterface<TInput extends Record<string, unknown>, TOutput> {
     }
 }
 
-export const api = new ApiWrapperGlobal();
+export const apiv2 = new ApiWrapperGlobal();
 
 
-const getUsers = api.createAPIMethod<
+const getUsers = apiv2.createAPIMethod<
     {
         page: number;
         search: string;
@@ -193,7 +193,7 @@ const getUsers = api.createAPIMethod<
 
 getUsers.call({
     page: 1,
-    search: ""
+    search: "test",
 }, async res => {
     if (res.hasError()) {
         // handle error

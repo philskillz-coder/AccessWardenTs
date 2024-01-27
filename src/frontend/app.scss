@@ -53,10 +53,16 @@ button, a, input, p, textarea, select {
 
     &:not(.no-dyn-txt) {
         color: var(--text);
-        * {
-            color: var(--text);
-        }
     }
+    &.no-dyn-txt {
+        color: #000000;
+    }
+    &.dyn-txt {
+        color: var(--text);
+    }
+}
+
+div {
     &.no-dyn-txt {
         color: #000000;
         * {
@@ -101,10 +107,14 @@ button, a, input, p, textarea, select {
     vertical-align: center;
 }
 
-button, input, a {
+button, input, select, a, p, span, textarea {
+    font-size: 0.875rem !important;
+}
+
+button, input, a, select, textarea {
     border-radius: 6px;
-    font-size: 14px !important;
-    line-height: 25px !important;
+
+    line-height: 1.563rem !important;
 }
 
 button, a {
@@ -138,16 +148,15 @@ input {
     margin-bottom: 0;
     padding: 8px 16px;
     width: 100%;
-    line-height: 25px;
-    font-size: 14px !important;
+    line-height: 1.563rem;
     border-radius: 6px;
     color: var(--text);
     background: none;
     border: 1px solid var(--gray3);
 
     &::placeholder {
-        line-height: 25px; // Increase the line-height for larger placeholder
-        font-size: 14px; // Increase the font-size for larger placeholder
+        line-height: 1.563rem; // Increase the line-height for larger placeholder
+        font-size: 0.875rem; // Increase the font-size for larger placeholder
         color: var(--gray2);
         display: flex;
         align-items: center;
@@ -169,14 +178,13 @@ input {
 }
 
 textarea {
-    font-size: 14px !important;
     color: var(--text);
     border-radius: 6px;
     background: none;
     border: 1px solid var(--gray3);
 
     &::placeholder {
-        font-size: 14px; // Increase the font-size for larger placeholder
+        font-size: 0.875rem; // Increase the font-size for larger placeholder
         color: var(--gray2);
     }
 
@@ -192,7 +200,7 @@ textarea {
 }
 
 label {
-    font-size: 14px;
+    font-size: 0.875rem;
     color: var(--text);
     text-align: left;
     display: block;
@@ -239,7 +247,6 @@ label {
                 width: 100%;
                 border: none;
                 background: none;
-                font-size: 16px;
                 font-weight: 500;
             }
         }
@@ -339,7 +346,6 @@ label {
                 width: 100%;
                 border: none;
                 background: none;
-                font-size: 16px;
                 font-weight: 500;
             }
         }
@@ -522,6 +528,7 @@ label {
 }
 
 .actions {
+    text-align: start;
     padding: 8px 0px;
 }
 
@@ -549,12 +556,12 @@ label {
 
     background-color: var(--gray5);
     border-radius: 10px;
-    padding: 25px;
+    padding: 1.563rem;
     text-align: center;
 
     h1 {
         margin: 0;
-        font-size: 24px;
+        font-size: 1.563rem;
     }
 
     .actions {

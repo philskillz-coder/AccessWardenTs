@@ -179,6 +179,7 @@ const Account = props => {
                                         spellcheck={false}
                                         onInput={e => setNewEmail(e.target.value)}
                                         invalid={newEmailError() !== null}
+                                        value=""
                                     />
                                     <Show when={newEmailError() !== null}>
                                         <FormHelperText color="red">{newEmailError()}</FormHelperText>
@@ -186,7 +187,14 @@ const Account = props => {
                                 </FormControl>
                                 <FormControl mb="$4">
                                     <FormLabel>Current Password</FormLabel>
-                                    <Input id="acc-new-mail-cur-password" type="password" placeholder="Enter current password" autocomplete="current-password" spellcheck={false} onInput={e => setCurPassword(e.target.value)}/>
+                                    <Input
+                                        id="acc-new-mail-cur-password"
+                                        type="password"
+                                        placeholder="Enter current password"
+                                        autocomplete="current-password"
+                                        spellcheck={false}
+                                        onInput={e => setCurPassword(e.target.value)}
+                                    />
                                 </FormControl>
                             </ModalBody>
                             <ModalFooter>
@@ -211,7 +219,16 @@ const Account = props => {
                             <ModalBody>
                                 <FormControl mb="$4">
                                     <FormLabel>Username</FormLabel>
-                                    <Input id="acc-new-username" type="text" placeholder="Enter new username" autocomplete="off" spellcheck={false} onInput={e => setNewUsername(e.target.value)} invalid={newUsernameError() !== null}/>
+                                    <Input
+                                        id="acc-new-username"
+                                        type="text"
+                                        placeholder="Enter new username"
+                                        autocomplete="off"
+                                        spellcheck={false}
+                                        onInput={e => setNewUsername(e.target.value)}
+                                        invalid={newUsernameError() !== null}
+                                        value=""
+                                    />
                                     <Show when={newUsernameError() !== null}>
                                         <FormHelperText color="red">{newUsernameError()}</FormHelperText>
                                     </Show>
@@ -239,11 +256,27 @@ const Account = props => {
                             <ModalBody>
                                 <FormControl mb="$4">
                                     <FormLabel>Current Password</FormLabel>
-                                    <Input id="acc-cur-password" type="password" placeholder="Enter current password" autocomplete="current-password" spellcheck={false} onInput={e => setCurPassword(e.target.value)}/>
+                                    <Input
+                                        id="acc-cur-password"
+                                        type="password"
+                                        placeholder="Enter current password"
+                                        autocomplete="current-password"
+                                        spellcheck={false}
+                                        onInput={e => setCurPassword(e.target.value)}
+                                    />
                                 </FormControl>
                                 <FormControl mb="$4">
                                     <FormLabel>New Password</FormLabel>
-                                    <Input id="acc-new-password" type="password" placeholder="Enter new password" autocomplete="new-password" spellcheck={false} onInput={e => setNewPassword(e.target.value)} invalid={newPasswordError() !== null}/>
+                                    <Input
+                                        id="acc-new-password"
+                                        type="password"
+                                        placeholder="Enter new password"
+                                        autocomplete="new-password"
+                                        spellcheck={false}
+                                        onInput={e => setNewPassword(e.target.value)}
+                                        invalid={newPasswordError() !== null}
+                                        value=""
+                                    />
                                     <Show when={newPasswordError() !== null}>
                                         <FormHelperText color="red">{newPasswordError()}</FormHelperText>
                                     </Show>

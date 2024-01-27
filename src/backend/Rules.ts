@@ -1,23 +1,71 @@
 import { BaseRules } from "@shared/Validation";
 
+// default rules are for a generic string
+export const DEFAULT_RULES: BaseRules = {
+    nullable: false,
+    minLength: null,
+    maxLength: null,
+
+    allowEmpty: true,
+    allowWhitespace: true,
+    allowNewlines: true,
+    allowSpecialChars: true,
+    allowNonLatinChars: true,
+    allowEmoji: true,
+
+    requireOnlyAlphaNumeric: false,
+
+    requireAnyUppercase: false,
+    requireAnyLowercase: false,
+    requireAnyNumeric: false,
+    requireAnySpecial: false,
+
+    minSpecialChars: null,
+    maxSpecialChars: null,
+
+    minNumericChars: null,
+    maxNumericChars: null,
+
+    minLowercaseChars: null,
+    maxLowercaseChars: null,
+    minUppercaseChars: null,
+    maxUppercaseChars: null,
+
+    regex: null
+};
+
 export const EMAIL_RULES: BaseRules = {
+    allowEmpty: false,
+    allowWhitespace: false,
+    allowNewlines: false,
     maxLength: 255,
-    // regex: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     regex: /^([a-z0-9_.-]+)@([\da-z.-]+)\.([a-z.]{2,6})$/
 };
 
 export const USERNAME_RULES: BaseRules = {
     minLength: 4,
-    maxLength: 20
+    maxLength: 20,
+    allowEmpty: false,
+    allowWhitespace: false,
+    allowNewlines: false,
+    allowSpecialChars: false,
+    allowEmoji: false
 };
 
 export const PASSWORD_RULES: BaseRules = {
     minLength: 8,
     maxLength: 64,
+    allowEmpty: false,
+    allowNewlines: false,
     requireAnyUppercase: true,
     requireAnyLowercase: true,
     requireAnyNumeric: true,
-    requireAnySpecial: true
+    requireAnySpecial: true,
+
+    minSpecialChars: 1,
+    minNumericChars: 1,
+    minLowercaseChars: 1,
+    minUppercaseChars: 1,
 };
 
 export const PERMISSION_NAME_RULES: BaseRules = {

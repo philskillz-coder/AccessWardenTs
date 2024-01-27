@@ -1,66 +1,21 @@
-import { notificationService } from "@hope-ui/solid";
-import { BaseRules, getFirstCheckError } from "@shared/Validation";
+import { FormControl, FormHelperText, Input, notificationService } from "@hope-ui/solid";
 import { A, useNavigate } from "@solidjs/router";
 import { UserVariantP } from "@typings";
-import { createEffect, createSignal,  Show } from "solid-js";
+import { Show } from "solid-js";
 
 import Store from "../Store";
-import { api } from "../utils";
+import { api, Validator } from "../utils";
 
 const Register = props => {
     const store: () => Store = props.store;
 
-    let emailRules: BaseRules = null;
-    const [email, setEmail] = createSignal(""); // email of the user
-    const [emailError, setEmailError] = createSignal(null); // email of the user
-    const [emailValid, setEmailValid] = createSignal(false); // email of the user
+    const validator = new Validator("username", "email", "password");
 
-    let usernameRules: BaseRules = null;
-    const [username, setUsername] = createSignal(""); // email of the user
-    const [usernameError, setUsernameError] = createSignal(null); // email of the user
-    const [usernameValid, setUsernameValid] = createSignal(false); // email of the user
-
-    let passwordRules: BaseRules = null;
-    const [password, setPassword] = createSignal(""); // password of the user
-    const [passwordError, setPasswordError] = createSignal(null); // password of the user
-    const [passwordValid, setPasswordValid] = createSignal(false); // password of the user
+    const [email, setEmail, emailError] = validator.useValidator("email", ""); // email of the user
+    const [username, setUsername, usernameError] = validator.useValidator("username", ""); // email of the user
+    const [password, setPassword, passwordError] = validator.useValidator("password", ""); // password of the user
 
     const navigate = useNavigate();
-
-    createEffect(() => {
-        const err = getFirstCheckError(email(), emailRules);
-        if (err !== null) {
-            setEmailError(err);
-            setEmailValid(false);
-        } else {
-            setEmailError(null);
-            setEmailValid(true);
-        }
-    });
-
-    createEffect(() => {
-        const err = getFirstCheckError(username(), usernameRules);
-
-        if (err !== null) {
-            setUsernameError(err);
-            setUsernameValid(false);
-        } else {
-            setUsernameError(null);
-            setUsernameValid(true);
-        }
-    });
-
-    createEffect(() => {
-        const err = getFirstCheckError(password(), passwordRules);
-
-        if (err !== null) {
-            setPasswordError(err);
-            setPasswordValid(false);
-        } else {
-            setPasswordError(null);
-            setPasswordValid(true);
-        }
-    });
 
     async function registerUser() {
         await api.post("/api/auth/register", {
@@ -87,51 +42,66 @@ const Register = props => {
         });
     }
 
-    api.post("/api/auth/register/rules", {}, async res => {
-        if (res.hasError()) {
-            notificationService.show({
-                status: "danger",
-                title: "Error",
-                description: res.message
-            });
-        } else {
-            emailRules = res.data.email;
-            usernameRules = res.data.username;
-            passwordRules = res.data.password;
-        }
-    });
-
     return (
         <>
             <div class="ui-modal center">
                 <h1>Register</h1>
                 <div class="actions">
-                    <form>
-                        <div class="action border">
-                            <input id="register-mail" type="email" placeholder="Your Email" name="email" autocomplete="email" onInput={e => setEmail(e.target.value)} />
-                        </div>
+                    <FormControl mb="$4">
+                        <Input
+                            id="register-mail"
+                            type="email"
+                            placeholder="Your Email"
+                            name="email"
+                            autocomplete="email"
+                            onInput={e => setEmail(e.target.value)}
+                            value=""
+                        />
                         <Show when={emailError() !== null}>
-                            <label for="register-mail" class="c-danger">{emailError()}</label>
+                            <FormHelperText color="red">{emailError()}</FormHelperText>
                         </Show>
+                    </FormControl>
 
-                        <div class="action border">
-                            <input id="register-username" type="text" placeholder="Your Username" name="username" autocomplete="username" onInput={e => setUsername(e.target.value)} />
-                        </div>
+                    <FormControl mb="$4">
+                        <Input
+                            id="register-username"
+                            type="text"
+                            placeholder="Your Username"
+                            name="username"
+                            autocomplete="off"
+                            onInput={e => setUsername(e.target.value)}
+                            value=""
+                        />
                         <Show when={usernameError() !== null}>
-                            <label for="register-username" class="c-danger">{usernameError()}</label>
+                            <FormHelperText color="red">{usernameError()}</FormHelperText>
                         </Show>
+                    </FormControl>
 
-                        <div class="action border">
-                            <input id="register-new-password" type="password" placeholder="Your Password" name="password" autocomplete="new-password" onInput={e => setPassword(e.target.value)} />
-                        </div>
+                    <FormControl mb="$4">
+                        <Input
+                            id="register-new-password"
+                            type="password"
+                            placeholder="Your Password"
+                            name="password"
+                            autocomplete="new-password"
+                            onInput={e => setPassword(e.target.value)}
+                            value=""
+                        />
                         <Show when={passwordError() !== null}>
-                            <label for="register-new-password" class="c-danger">{passwordError()}</label>
+                            <FormHelperText color="red">{passwordError()}</FormHelperText>
                         </Show>
+                    </FormControl>
 
-                        <div class="action bg-success no-dyn-txt">
-                            <button type="button" onClick={registerUser} disabled={!emailValid() || !usernameValid() || !passwordValid()}>Register</button>
-                        </div>
-                    </form>
+                    <div class="action no-dyn-txt">
+                        <button
+                            classList={{
+                                "bg-success": emailError() === null && usernameError() === null && passwordError() === null,
+                            }}
+                            type="button"
+                            onClick={registerUser}
+                            disabled={emailError() !== null && usernameError() !== null && passwordError() !== null}
+                        >Register</button>
+                    </div>
                 </div>
                 <span>Already have an account? <A href="/login">Login here</A></span>
             </div>

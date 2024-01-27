@@ -1,9 +1,9 @@
 import Hashing from "@shared/Hashing";
 import logger from "@shared/Logger";
-import { baseCheck } from "@shared/Validation";
+import { baseCheck, getFirstCheckError } from "@shared/Validation";
 import { ApiResponseFlags, UserVariantAuth } from "@typings";
 import { PagePermissions } from "backend/database/required-data";
-import { EMAIL_RULES, PASSWORD_RULES, PERMISSION_DESCRIPTION_RULES, PERMISSION_NAME_RULES, ROLE_DESCRIPTION_RULES, ROLE_NAME_RULES, USERNAME_RULES } from "backend/Rules";
+import { DEFAULT_RULES, EMAIL_RULES, PASSWORD_RULES, PERMISSION_DESCRIPTION_RULES, PERMISSION_NAME_RULES, ROLE_DESCRIPTION_RULES, ROLE_NAME_RULES, USERNAME_RULES } from "backend/Rules";
 import dotenv from "dotenv";
 import { Router } from "express";
 import speakeasy from "speakeasy";
@@ -119,20 +119,6 @@ ApiRouter.post("/auth/logout", ensureAuthenticated, (req, res) => {
     });
 });
 
-
-ApiRouter.post("/auth/register/info", async function(req: CRequest, res) {
-    res.json({
-        status: "success",
-        data: {
-            rules: {
-                username: USERNAME_RULES,
-                email: EMAIL_RULES,
-                password: PASSWORD_RULES
-            }
-        }
-    });
-});
-
 ApiRouter.post("/auth/register", async function(req: CRequest, res) {
     // check if username or email is already taken
 
@@ -152,6 +138,8 @@ ApiRouter.post("/auth/register", async function(req: CRequest, res) {
         return res.status(400).json({ status: "error", message: "Invalid email" });
     }
 
+    console.log(getFirstCheckError(password, PASSWORD_RULES));
+    console.log(baseCheck(password, PASSWORD_RULES));
     if (!baseCheck(password, PASSWORD_RULES)) {
         return res.status(400).json({ status: "error", message: "Password is not safe enough" });
     }
@@ -434,6 +422,7 @@ ApiRouter.post("/common/rules", async function(req: CRequest, res) {
             result[rule] = null;
         }
         result[rule] = {
+            ...DEFAULT_RULES,
             ...AVAILABLE_RULES[rule].rule,
             regex: AVAILABLE_RULES[rule].rule.regex?.source
         };

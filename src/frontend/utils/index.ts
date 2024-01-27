@@ -28,8 +28,8 @@ export class Validator {
         });
     }
 
-    public useValidator(rule: string) : [Accessor<string>, Setter<string>, Accessor<string>] {
-        const [value, setValue] = createSignal<string>(null);
+    public useValidator(rule: string, defaultValue: string = null) : [Accessor<string>, Setter<string>, Accessor<string>] {
+        const [value, setValue] = createSignal<string>(defaultValue);
         const [error, setError] = createSignal<string>(null);
 
         // every time value changes set error to const err = getFirstCheckError(value(), rule);
