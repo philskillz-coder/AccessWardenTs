@@ -11,9 +11,9 @@ export enum ApiResponseFlags {
     end_reached = "end_reached"
 }
 
-export class ApiResponse {
+export class ApiResponse<TData> {
     status: ApiResponseStatus;
-    data: any;
+    data: TData;
     message: string;
     flags: ApiResponseFlags[];
 
@@ -24,8 +24,8 @@ export class ApiResponse {
         this.flags = response.flags || [];
     }
 
-    static fromError(error: string) {
-        return new ApiResponse({
+    static fromError<TData>(error: string) {
+        return new ApiResponse<TData>({
             status: "error",
             message: error,
             data: null,

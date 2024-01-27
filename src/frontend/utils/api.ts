@@ -2,7 +2,7 @@ import { notificationService } from "@hope-ui/solid";
 import { ApiResponse, ApiResponseFlags } from "@typings";
 
 /* eslint-disable no-unused-vars */
-type CALLBACK = (resp: ApiResponse) => Promise<any>;
+type CALLBACK = (resp: ApiResponse<any>) => Promise<any>;
 type CANCEL_CALLBACK = (err?: any) => Promise<any>;
 
 export class ApiInterface {
@@ -29,15 +29,15 @@ export class ApiInterface {
         this.timeout = null;
     }
 
-    async post(path: string, body?: any, calllback?: CALLBACK, cancel?: CANCEL_CALLBACK): Promise<ApiResponse> {
+    async post(path: string, body?: any, calllback?: CALLBACK, cancel?: CANCEL_CALLBACK): Promise<ApiResponse<any>> {
         return await this.callApi(path, "POST", body, calllback, cancel);
     }
 
-    async get(path: string, body?: any, calllback?: CALLBACK, cancel?: CANCEL_CALLBACK): Promise<ApiResponse> {
+    async get(path: string, body?: any, calllback?: CALLBACK, cancel?: CANCEL_CALLBACK): Promise<ApiResponse<any>> {
         return await this.callApi(path, "GET", body, calllback, cancel);
     }
 
-    async callApi(path: string, method: string, body?: any, calllback?: CALLBACK, cancel?: CANCEL_CALLBACK): Promise<ApiResponse> {
+    async callApi(path: string, method: string, body?: any, calllback?: CALLBACK, cancel?: CANCEL_CALLBACK): Promise<ApiResponse<any>> {
         try {
             if (calllback != null) this.callback = calllback;
             if (cancel != null) this.cancelCallback = cancel;
