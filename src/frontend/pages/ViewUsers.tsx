@@ -2,7 +2,7 @@ import "./view-users.scss";
 
 import { ModalConfirmation } from "@components/ModalConfirmation";
 import { ShowIfPermission } from "@components/ShowIfPermission";
-import { Avatar, Button, FormControl, FormLabel, HStack, Modal, ModalBody, ModalFooter, ModalHeader, Spinner, Tag, VStack } from "@hope-ui/solid";
+import { Avatar, Button, FormControl, FormHelperText, FormLabel, HStack, Modal, ModalBody, ModalFooter, ModalHeader, Spinner, Tag, VStack } from "@hope-ui/solid";
 import { Input, ModalCloseButton, ModalContent, ModalOverlay, notificationService } from "@hope-ui/solid";
 import { useNavigate } from "@solidjs/router";
 import { ApiResponseFlags, UserVariantDef } from "@typings";
@@ -11,12 +11,15 @@ import { BiRegularCheck, BiRegularX, BiSolidPencil, BiSolidPlusCircle } from "so
 import { createSignal, For, onCleanup, Show } from "solid-js";
 
 import Store from "../Store";
-import { api } from "../utils";
+import { api, Validator } from "../utils";
 
 function ViewUsers(props) {
     type _Role = {id: string, name: string, has: boolean};
 
     const store: () => Store = props.store;
+
+    const validator = new Validator("username", "email", "password");
+
     const [users, setUsers] = createSignal<UserVariantDef[]>([]);
     const [usersEndReached, setUsersEndReached] = createSignal(false);
     const [usersLoading, setUsersLoading] = createSignal(false);
@@ -29,13 +32,13 @@ function ViewUsers(props) {
     const [displayedUserRoles, setDisplayedUserRoles] = createSignal<_Role[] | null>(null);
 
     const [editingEmail, setEditingEmail] = createSignal(false);
-    const [newEmail, setNewEmail] = createSignal<string | null>(null);
+    const [newEmail, setNewEmail, newEmailError] = validator.useValidator("email", "");
 
     const [editingUsername, setEditingUsername] = createSignal(false);
-    const [newUsername, setNewUsername] = createSignal<string | null>(null);
+    const [newUsername, setNewUsername, newUsernameError] = validator.useValidator("username", "");
 
     const [editingPassword, setEditingPassword] = createSignal(false);
-    const [newPassword, setNewPassword] = createSignal<string | null>(null);
+    const [newPassword, setNewPassword, newPasswordError] = validator.useValidator("password", "");
 
     const [isCreateUser, setIsCreateUser] = createSignal(false);
 
@@ -566,19 +569,53 @@ function ViewUsers(props) {
                                 <ModalBody>
                                     <FormControl mb="$4">
                                         <FormLabel>Username</FormLabel>
-                                        <Input id="mg-user-new-user-username" type="text" placeholder="Enter username" autocomplete="off" spellcheck={false} onInput={e => setNewUsername(e.target.value)}/>
+                                        <Input
+                                            id="mg-user-new-user-username"
+                                            type="text"
+                                            placeholder="Enter username"
+                                            autocomplete="off"
+                                            spellcheck={false}
+                                            onInput={e => setNewUsername(e.target.value)}
+                                            invalid={newUsernameError() !== null}
+                                        />
+                                        <Show when={newUsernameError() !== null}>
+                                            <FormHelperText color="red">{newUsernameError()}</FormHelperText>
+                                        </Show>
                                     </FormControl>
                                     <FormControl mb="$4">
                                         <FormLabel>Email Address</FormLabel>
-                                        <Input id="mg-user-new-user-mail" type="mail" placeholder="Enter email address" autocomplete="off" spellcheck={false} onInput={e => setNewEmail(e.target.value)}/>
+                                        <Input
+                                            id="mg-user-new-user-mail"
+                                            type="mail"
+                                            placeholder="Enter email address"
+                                            autocomplete="off"
+                                            spellcheck={false}
+                                            onInput={e => setNewEmail(e.target.value)}
+                                            invalid={newEmailError() !== null}
+                                        />
+                                        <Show when={newEmailError() !== null}>
+                                            <FormHelperText color="red">{newEmailError()}</FormHelperText>
+                                        </Show>
                                     </FormControl>
                                     <FormControl mb="$4">
                                         <FormLabel>Password</FormLabel>
-                                        <Input id="mg-user-new-user-password" type="password" placeholder="Enter password" autocomplete="new-password" spellcheck={false} onInput={e => setNewPassword(e.target.value)}/>
+                                        <Input
+                                            id="mg-user-new-user-password"
+                                            type="password"
+                                            placeholder="Enter password"
+                                            autocomplete="new-password"
+                                            spellcheck={false}
+                                            onInput={e => setNewPassword(e.target.value)}
+                                            invalid={newPasswordError() !== null}
+                                        />
+                                        <Show when={newPasswordError() !== null}>
+                                            <FormHelperText color="red">{newPasswordError()}</FormHelperText>
+                                        </Show>
+                                        {/* TODO: confirm password */}
                                     </FormControl>
                                 </ModalBody>
                                 <ModalFooter>
-                                    <Button onClick={updateUsername}>Create</Button>
+                                    <Button onClick={updateUsername} disabled={newUsernameError() !== null || newEmailError() !== null || newPasswordError() !== null}>Create</Button>
                                     <Button id="mg-user-new-user-cancel" onClick={closeCreateUser} ms="auto" colorScheme={"primary"}>Cancel</Button>
                                 </ModalFooter>
                             </ModalContent>
@@ -663,11 +700,22 @@ function ViewUsers(props) {
                                                 <ModalBody>
                                                     <FormControl mb="$4">
                                                         <FormLabel>Email Address</FormLabel>
-                                                        <Input id="mg-user-new-mail" type="mail" placeholder="Enter new email address" autocomplete="off" spellcheck={false} onInput={e => setNewEmail(e.target.value)}/>
+                                                        <Input
+                                                            id="mg-user-new-mail"
+                                                            type="mail"
+                                                            placeholder="Enter new email address"
+                                                            autocomplete="off"
+                                                            spellcheck={false}
+                                                            onInput={e => setNewEmail(e.target.value)}
+                                                            invalid={newEmailError() !== null}
+                                                        />
+                                                        <Show when={newEmailError() !== null}>
+                                                            <FormHelperText color="red">{newEmailError()}</FormHelperText>
+                                                        </Show>
                                                     </FormControl>
                                                 </ModalBody>
                                                 <ModalFooter>
-                                                    <Button onClick={updateEmail}>Update</Button>
+                                                    <Button onClick={updateEmail} disabled={newEmailError() !== null} >Update</Button>
                                                     <Button id="mg-user-new-mail-cancel" onClick={closeEmailEditor} ms="auto" colorScheme={"primary"}>Cancel</Button>
                                                 </ModalFooter>
                                             </ModalContent>
@@ -693,7 +741,18 @@ function ViewUsers(props) {
                                                 <ModalBody>
                                                     <FormControl mb="$4">
                                                         <FormLabel>Username</FormLabel>
-                                                        <Input id="mg-user-new-username" type="text" placeholder="Enter new username" autocomplete="off" spellcheck={false} onInput={e => setNewUsername(e.target.value)}/>
+                                                        <Input
+                                                            id="mg-user-new-username"
+                                                            type="text"
+                                                            placeholder="Enter new username"
+                                                            autocomplete="off"
+                                                            spellcheck={false}
+                                                            onInput={e => setNewUsername(e.target.value)}
+                                                            invalid={newUsernameError() !== null}
+                                                        />
+                                                        <Show when={newUsernameError() !== null}>
+                                                            <FormHelperText color="red">{newUsernameError()}</FormHelperText>
+                                                        </Show>
                                                     </FormControl>
                                                 </ModalBody>
                                                 <ModalFooter>
@@ -723,11 +782,22 @@ function ViewUsers(props) {
                                                 <ModalBody>
                                                     <FormControl mb="$4">
                                                         <FormLabel>New Password</FormLabel>
-                                                        <Input id="mg-user-new-password" type="password" placeholder="Enter new password" autocomplete="new-password" spellcheck={false} onInput={e => setNewPassword(e.target.value)}/>
+                                                        <Input
+                                                            id="mg-user-new-password"
+                                                            type="password"
+                                                            placeholder="Enter new password"
+                                                            autocomplete="new-password"
+                                                            spellcheck={false}
+                                                            onInput={e => setNewPassword(e.target.value)}
+                                                            invalid={newPasswordError() !== null}
+                                                        />
+                                                        <Show when={newPasswordError() !== null}>
+                                                            <FormHelperText color="red">{newPasswordError()}</FormHelperText>
+                                                        </Show>
                                                     </FormControl>
                                                 </ModalBody>
                                                 <ModalFooter>
-                                                    <Button onClick={updatePassword}>Update</Button>
+                                                    <Button onClick={updatePassword} disabled={newPasswordError() !== null}>Update</Button>
                                                     <Button id="mg-user-new-password-cancel" onClick={closePasswordEditor} ms="auto" colorScheme={"primary"}>Cancel</Button>
                                                 </ModalFooter>
                                             </ModalContent>

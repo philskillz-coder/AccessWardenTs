@@ -1,6 +1,6 @@
 import Hashing from "@shared/Hashing";
 import logger from "@shared/Logger";
-import { baseCheck, getFirstCheckError } from "@shared/Validation";
+import { baseCheck, BaseRules, getFirstCheckError } from "@shared/Validation";
 import { ApiResponseFlags, UserVariantAuth } from "@typings";
 import { PagePermissions } from "backend/database/required-data";
 import { DEFAULT_RULES, EMAIL_RULES, PASSWORD_RULES, PERMISSION_DESCRIPTION_RULES, PERMISSION_NAME_RULES, ROLE_DESCRIPTION_RULES, ROLE_NAME_RULES, USERNAME_RULES } from "backend/Rules";
@@ -412,7 +412,7 @@ const AVAILABLE_RULES = {
 ApiRouter.post("/common/rules", async function(req: CRequest, res) {
     const user = <User>req.user;
     const rules: string[] = req.body.rules;
-    const result = {};
+    const result: Record<string, BaseRules> = {};
 
     for (const rule of rules) {
         if (!AVAILABLE_RULES[rule]) {

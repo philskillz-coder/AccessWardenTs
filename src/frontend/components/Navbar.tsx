@@ -26,7 +26,7 @@ export const Navbar = props => {
             "navbar navbar-expand-lg ui-bg-gray5 p-2": true,
             [navbarClass()]: true
         }}>
-            <A class="navbar-brand" href="/">AccessWarden</A>
+            <A class="navbar-brand" href="/" style={{"font-size": "1.3rem!important"}}>AccessWarden</A>
             <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon" />
             </button>

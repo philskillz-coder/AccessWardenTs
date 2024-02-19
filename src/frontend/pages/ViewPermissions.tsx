@@ -4,17 +4,20 @@ import { ModalConfirmation } from "@components/ModalConfirmation";
 import { ShowIfPermission } from "@components/ShowIfPermission";
 import { Button, FormControl, FormLabel, Modal, ModalBody, ModalFooter, ModalHeader } from "@hope-ui/solid";
 import { Input, ModalCloseButton, ModalContent, ModalOverlay, notificationService } from "@hope-ui/solid";
-import { ApiResponseFlags, CleanPermission } from "@typings";
+import { ApiResponseFlags } from "@typings";
 import { BiSolidPencil } from "solid-icons/bi";
 import { createSignal, For, onCleanup, Show } from "solid-js";
 
 import Store from "../Store";
-import { api } from "../utils";
+import { api, Validator } from "../utils";
 
 function ViewPermissions(props) {
     type _Role = {id: string, name: string};
 
     const store: () => Store = props.store;
+
+    const validator = new Validator("permission_name", "permission_description");
+
     const [permissions, setPermissions] = createSignal([]);
     const [permissionsEndReached, setPermissionsEndReached] = createSignal(false);
     const [permissionsLoading, setPermissionsLoading] = createSignal(false);

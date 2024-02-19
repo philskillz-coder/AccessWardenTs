@@ -77,6 +77,7 @@ const Register = props => {
                         </Show>
                     </FormControl>
 
+                    {/* TODO: confirm password */}
                     <FormControl mb="$4">
                         <Input
                             id="register-new-password"

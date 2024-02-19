@@ -39,6 +39,7 @@ export class ApiInterface {
 
     async callApi(path: string, method: string, body?: any, calllback?: CALLBACK, cancel?: CANCEL_CALLBACK): Promise<ApiResponse<any>> {
         try {
+            console.log("Calling API", path, method, body);
             if (calllback != null) this.callback = calllback;
             if (cancel != null) this.cancelCallback = cancel;
 
@@ -86,6 +87,7 @@ export class ApiInterface {
             }
 
             if (this.callback != null) {
+                console.log("Callback for ", path, method, body);
                 await this.callback(apiResp);
             }
             return apiResp;
