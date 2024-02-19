@@ -387,6 +387,7 @@ function ViewUsers(props) {
     }
 
     function createUser() {
+        // TODO: add api post
         setNewUsername(null);
         setNewEmail(null);
         setNewPassword(null);
@@ -615,7 +616,7 @@ function ViewUsers(props) {
                                     </FormControl>
                                 </ModalBody>
                                 <ModalFooter>
-                                    <Button onClick={updateUsername} disabled={newUsernameError() !== null || newEmailError() !== null || newPasswordError() !== null}>Create</Button>
+                                    <Button onClick={createUser} disabled={newUsernameError() !== null || newEmailError() !== null || newPasswordError() !== null}>Create</Button>
                                     <Button id="mg-user-new-user-cancel" onClick={closeCreateUser} ms="auto" colorScheme={"primary"}>Cancel</Button>
                                 </ModalFooter>
                             </ModalContent>

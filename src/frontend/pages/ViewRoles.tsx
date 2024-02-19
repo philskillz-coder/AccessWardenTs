@@ -2,7 +2,7 @@ import "./view-users.scss";
 
 import { ModalConfirmation } from "@components/ModalConfirmation";
 import { ShowIfPermission } from "@components/ShowIfPermission";
-import { Button, FormControl, FormLabel, HStack, Modal, ModalBody, ModalFooter, ModalHeader, Spinner, Tag, Textarea, VStack } from "@hope-ui/solid";
+import { Button, FormControl, FormHelperText, FormLabel, HStack, Modal, ModalBody, ModalFooter, ModalHeader, Spinner, Tag, Textarea, VStack } from "@hope-ui/solid";
 import { Input, ModalCloseButton, ModalContent, ModalOverlay, notificationService } from "@hope-ui/solid";
 import { ApiResponseFlags, RoleVariantDef } from "@typings";
 import { format } from "date-fns";
@@ -11,12 +11,14 @@ import { BsSlash } from "solid-icons/bs";
 import { createSignal, For, onCleanup, Show } from "solid-js";
 
 import Store from "../Store";
-import { api } from "../utils";
+import { api, Validator } from "../utils";
 
 function ViewRoles(props) {
     type _Permission = {id: string, name: string, hasPermission: boolean | null};
 
     const store: () => Store = props.store;
+    const validator = new Validator("role_name", "role_description");
+
     const [roles, setRoles] = createSignal<RoleVariantDef[]>([]);
     const [rolesEndReached, setRolesEndReached] = createSignal(false);
     const [rolesLoading, setRolesLoading] = createSignal(false);
@@ -29,11 +31,14 @@ function ViewRoles(props) {
     const [displayedRolePermissions, setDisplayedRolePermissions] = createSignal<_Permission[] | null>(null);
 
     const [editingName, setEditingName] = createSignal(false);
-    const [newName, setNewName] = createSignal<string | null>(null);
+    const [newName, setNewName, newNameError] = validator.useValidator("role_name", "");
+
     const [editingDescription, setEditingDescription] = createSignal(false);
-    const [newDescription, setNewDescription] = createSignal<string | null>(null);
+    const [newDescription, setNewDescription, newDescriptionError] = validator.useValidator("role_description", "");
     const [editingPower, setEditingPower] = createSignal(false);
     const [newPower, setNewPower] = createSignal<number | null>(null);
+
+    const [isCreateRole, setIsCreateRole] = createSignal(false);
 
     const [defaultRoleCR, setDefaultRoleCR] = createSignal(false);
     const [mfaRoleCR, setMfaRoleCR] = createSignal(false);
@@ -366,6 +371,19 @@ function ViewRoles(props) {
         });
     }
 
+    function createRole() {
+        // TODO: add api post
+        setNewName(null);
+        setNewDescription(null);
+        setIsCreateRole(true);
+    }
+
+    function closeCreateRole() {
+        setIsCreateRole(false);
+        setNewName(null);
+        setNewDescription(null);
+    }
+
     function loadMoreRoles() {
         if (rolesEndReached() || rolesLoading()) {
             return;
@@ -532,6 +550,56 @@ function ViewRoles(props) {
                     <div class="data-pin">
                         <label for="mg-search-usr">Search</label>
                         <input id="mg-search-usr" placeholder="..." onInput={e => searchRoles(e.target.value)}/>
+                        <button
+                            class="bg-info mt-1"
+                            onClick={createRole}
+                            title={!hasPermission({name: "Admin.Create.Role"}) ? "You don't have the permission to do that!" : ""}
+                            disabled={!hasPermission({name: "Admin.Create.Role"})}
+                        >
+                            Create role
+                        </button>
+                        <Modal opened={isCreateRole()} onClose={closeCreateRole} initialFocus="#mg-role-new-role-name">
+                            <ModalOverlay />
+                            <ModalContent>
+                                <ModalCloseButton />
+                                <ModalHeader>Create Role</ModalHeader>
+                                <ModalBody>
+                                    <FormControl mb="$4">
+                                        <FormLabel>Name</FormLabel>
+                                        <Input
+                                            id="mg-role-new-role-name"
+                                            type="text"
+                                            placeholder="Enter name"
+                                            autocomplete="off"
+                                            spellcheck={false}
+                                            onInput={e => setNewName(e.target.value)}
+                                            invalid={newNameError() !== null}
+                                        />
+                                        <Show when={newNameError() !== null}>
+                                            <FormHelperText color="red">{newNameError()}</FormHelperText>
+                                        </Show>
+                                    </FormControl>
+                                    <FormControl mb="$4">
+                                        <FormLabel>Description</FormLabel>
+                                        <Textarea
+                                            id="mg-role-new-role-description"
+                                            placeholder="Enter description"
+                                            autocomplete="off"
+                                            spellcheck={false}
+                                            onInput={e => setNewDescription(e.target.value)}
+                                            invalid={newDescriptionError() !== null}
+                                        />
+                                        <Show when={newDescriptionError() !== null}>
+                                            <FormHelperText color="red">{newDescriptionError()}</FormHelperText>
+                                        </Show>
+                                    </FormControl>
+                                </ModalBody>
+                                <ModalFooter>
+                                    <Button onClick={createRole} disabled={newNameError() !== null || newDescriptionError() !== null}>Create</Button>
+                                    <Button id="mg-role-new-role-cancel" onClick={closeCreateRole} ms="auto" colorScheme={"primary"}>Cancel</Button>
+                                </ModalFooter>
+                            </ModalContent>
+                        </Modal>
                     </div>
                     <hr/>
                     <div id="vu-data" class="data-scroll">
