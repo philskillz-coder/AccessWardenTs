@@ -49,30 +49,31 @@ body {
 }
 
 button, a, input, p, textarea, select {
-    height: 40px; // default
+    height: 40px;
 
-    &:not(.no-dyn-txt) {
-        color: var(--text);
-    }
-    &.no-dyn-txt {
-        color: #000000;
-    }
-    &.dyn-txt {
-        color: var(--text);
-    }
+    // &:not(.no-dyn-txt) {
+    //     color: var(--text);
+    // }
+    // &.no-dyn-txt {
+    //     color: #000000;
+    // }
+    // &.dyn-txt {
+    //     color: var(--text);
+    // }
 }
 
-div {
+* {
+    &:not(.no-dyn-txt), &.dyn-txt {
+        color: var(--text);
+        * {
+            color: var(--text);
+        
+        }
+    }
     &.no-dyn-txt {
         color: #000000;
         * {
             color: #000000;
-        }
-    }
-    &.dyn-txt {
-        color: var(--text);
-        * {
-            color: var(--text);
         }
     }
 }
@@ -113,8 +114,17 @@ button, input, select, a, p, span, textarea {
 
 button, input, a, select, textarea {
     border-radius: 6px;
-
+    background: none;
     line-height: 1.563rem !important;
+
+    &:disabled {
+        cursor: default;
+        color: var(--gray2);
+        opacity: unset;
+        &:hover {
+            cursor: default;
+        }
+    }
 }
 
 button, a {
@@ -129,9 +139,6 @@ button, a {
 
     &:disabled {
         filter: brightness(85%);
-        &:hover {
-            cursor: default;
-        }
     }
 }
 
@@ -140,64 +147,35 @@ button, input {
     display: block;
 }
 
-input {
-    display: block;
-    position: relative;
-    flex: 1 1 auto;
+input, textarea {
+    border: 1px solid var(--gray3);
+    width: 100%;
+    padding: 8px 16px;
     margin-top: 0;
     margin-bottom: 0;
-    padding: 8px 16px;
-    width: 100%;
-    line-height: 1.563rem;
-    border-radius: 6px;
-    color: var(--text);
-    background: none;
-    border: 1px solid var(--gray3);
+    display: block;
 
     &::placeholder {
+        color: var(--gray2);
         line-height: 1.563rem; // Increase the line-height for larger placeholder
         font-size: 0.875rem; // Increase the font-size for larger placeholder
-        color: var(--gray2);
         display: flex;
         align-items: center;
         justify-content: center;
     }
 
-    &:disabled {
-        cursor: default;
-        &:hover {
-            cursor: default;
-        }
-        color: var(--gray2);
-    }
-
     &:focus {
         outline: none;
         border: 1px solid var(--gray2);
     }
 }
 
-textarea {
-    color: var(--text);
-    border-radius: 6px;
-    background: none;
-    border: 1px solid var(--gray3);
-
-    &::placeholder {
-        font-size: 0.875rem; // Increase the font-size for larger placeholder
-        color: var(--gray2);
-    }
-
-    &:disabled {
-        cursor: default;
-        color: var(--gray2);
-    }
-
-    &:focus {
-        outline: none;
-        border: 1px solid var(--gray2);
-    }
+input {
+    position: relative;
+    flex: 1 1 auto;
+    line-height: 1.563rem;
 }
+
 
 label {
     font-size: 0.875rem;

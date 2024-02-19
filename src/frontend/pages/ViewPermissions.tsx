@@ -1,34 +1,33 @@
-import "./view-users.scss";
-
 import { ModalConfirmation } from "@components/ModalConfirmation";
 import { ShowIfPermission } from "@components/ShowIfPermission";
-import { Button, FormControl, FormLabel, Modal, ModalBody, ModalFooter, ModalHeader } from "@hope-ui/solid";
+import { Button, FormControl, FormLabel, HStack, Modal, ModalBody, ModalFooter, ModalHeader, Spinner, Tag, Textarea, VStack } from "@hope-ui/solid";
 import { Input, ModalCloseButton, ModalContent, ModalOverlay, notificationService } from "@hope-ui/solid";
-import { ApiResponseFlags } from "@typings";
-import { BiSolidPencil } from "solid-icons/bi";
+import { ApiResponseFlags, PermissionVariantDef } from "@typings";
+import { format } from "date-fns";
+import { BiSolidPencil, BiSolidPlusCircle } from "solid-icons/bi";
 import { createSignal, For, onCleanup, Show } from "solid-js";
 
 import Store from "../Store";
-import { api, Validator } from "../utils";
+import { api } from "../utils";
 
 function ViewPermissions(props) {
     type _Role = {id: string, name: string};
 
     const store: () => Store = props.store;
-
-    const validator = new Validator("permission_name", "permission_description");
-
-    const [permissions, setPermissions] = createSignal([]);
+    const [permissions, setPermissions] = createSignal<PermissionVariantDef[]>([]);
     const [permissionsEndReached, setPermissionsEndReached] = createSignal(false);
     const [permissionsLoading, setPermissionsLoading] = createSignal(false);
+    const [showLoading, setShowLoading] = createSignal(false);
     const [search, setSearch] = createSignal("");
     let searchTimeout: NodeJS.Timeout | null = null;
 
-    const [selectedPermission, setSelectedPermission] = createSignal<CleanPermission | null>(null);
+    const [selectedPermission, setSelectedPermission] = createSignal<PermissionVariantDef | null>(null);
     const [selectedPermissionRoles, setSelectedPermissionRoles] = createSignal<_Role[] | null>(null);
 
     const [editingName, setEditingName] = createSignal(false);
     const [newName, setNewName] = createSignal<string | null>(null);
+    const [editingDescription, setEditingDescription] = createSignal(false);
+    const [newDescription, setNewDescription] = createSignal<string | null>(null);
 
     const [deletePermissionCR, setDeletePermissionCR] = createSignal(false);
 
@@ -39,7 +38,29 @@ function ViewPermissions(props) {
     const count = 25;
 
     function refreshPermissions() {
+        setPermissionsLoading(true); // avoid multiple requests
+
+        // only show loading indicator if loading takes longer than 100ms (avoids blinking)
+        const setLoadTimeout = setTimeout(() => {
+            setShowLoading(true);
+        }, 100);
+
+        const resetLoadTimeout = setTimeout(() => {
+            setPermissionsLoading(false);
+            setShowLoading(false);
+            notificationService.show({
+                status: "warning",
+                title: "Warning",
+                description: "Could not load permissions."
+            });
+        }, 5 * 1000);
+
         api.post("/api/mg/permissions/get", { page: page, count: count }, async res => {
+            clearTimeout(setLoadTimeout);
+            clearTimeout(resetLoadTimeout);
+            setPermissionsLoading(false);
+            setShowLoading(false);
+
             if (res.hasFlag(ApiResponseFlags.forbidden)) {
                 setHasPagePermission(false);
             } else {
@@ -69,35 +90,57 @@ function ViewPermissions(props) {
     }
 
     function doSearch() {
-        if (search() === "") {
+        if (search() === "") { // reset search
             setSearch("");
             refreshPermissions();
             setPermissionsEndReached(false);
+        } else {
+            setPermissionsLoading(true); // avoid multiple requests
+
+            // only show loading indicator if loading takes longer than 100ms (avoids blinking)
+            const setLoadTimeout = setTimeout(() => {
+                setShowLoading(true);
+            }, 100);
+
+            const resetLoadTimeout = setTimeout(() => {
+                setPermissionsLoading(false);
+                setShowLoading(false);
+                notificationService.show({
+                    status: "warning",
+                    title: "Warning",
+                    description: "Could not load permissions."
+                });
+            }, 5 * 1000);
+
+            api.post("/api/mg/permissions/search", { page: page, count: count, search: search() }, async res => {
+                clearTimeout(setLoadTimeout);
+                clearTimeout(resetLoadTimeout);
+                setPermissionsLoading(false);
+                setShowLoading(false);
+
+                if (res.hasError()) {
+                    console.log(res.message);
+                    return;
+                }
+
+                if (res.data.permissions.length < count) {
+                    setPermissionsEndReached(true);
+                }
+
+                if (page === 0) {
+                    setPermissions(res.data.permissions || []);
+                } else {
+                    setPermissions([...permissions(), ...res.data.permissions || []]); // append new roles to the list
+                }
+
+                if (!selectedPermission() && res.data.permissions.length > 0) {
+                    setSelectedPermission(res.data.permissions[0]);
+                }
+            });
         }
-
-        api.post("/api/mg/permissions/search", { page: page, count: count, search: search() }, async res => {
-            if (res.hasError()) {
-                console.log(res.message);
-                return;
-            }
-
-            if (res.data.permissions.length < count) {
-                setPermissionsEndReached(true);
-            }
-
-            if (page === 0) {
-                setPermissions(res.data.permissions || []);
-            } else {
-                setPermissions([...permissions(), ...res.data.permissions || []]);
-            }
-
-            if (!selectedPermission() && res.data.permissions.length > 0) {
-                setSelectedPermission(res.data.permissions[0]);
-            }
-        });
     }
 
-    function searchPermissions(text: string) {
+    function searchRoles(text: string) {
         setSearch(text);
         if (searchTimeout) {
             clearTimeout(searchTimeout);
@@ -108,13 +151,13 @@ function ViewPermissions(props) {
         }, 300);
     }
 
-    function hasPermission(permission: string) {
-        return store().user().permissions.find(perm => perm.name === permission) !== undefined;
+    // eslint-disable-next-line no-unused-vars
+    function hasPermission(check: {name?: string, id?: string}) {
+        return store().user().permissions.some(permission => (check.id !== undefined ? permission.id === check.id : true) && (check.name !== undefined ? permission.name === check.name : true));
     }
 
-
     function getSelectedPermissionRoles() {
-        api.post("/api/mg/permissions/get-all-roles", { permissionId: selectedPermission().id }, async res => {
+        api.post("/api/mg/roles/get-all-roles", { permissionId: selectedPermission().id }, async res => {
             if (res.hasError()) {
                 notificationService.show({
                     status: "danger",
@@ -132,6 +175,11 @@ function ViewPermissions(props) {
         setNewName(null);
     }
 
+    function closeDescriptionEditor() {
+        setEditingDescription(false);
+        setNewDescription(null);
+    }
+
     function updatePermissionList() {
         const permissionIndex = permissions().findIndex(perm => perm.id === selectedPermission().id);
 
@@ -139,10 +187,10 @@ function ViewPermissions(props) {
             return;
         }
 
-        const updatedPerms = [...permissions()];
-        updatedPerms[permissionIndex] = selectedPermission();
+        const updatedPermissions = [...permissions()];
+        updatedPermissions[permissionIndex] = selectedPermission();
 
-        setPermissions(updatedPerms);
+        setPermissions(updatedPermissions);
     }
 
     function updateName() {
@@ -163,6 +211,28 @@ function ViewPermissions(props) {
                 setNewName(null);
                 updatePermissionList();
                 closeNameEditor();
+            }
+        });
+    }
+
+    function updateDescription() {
+        api.post("/api/mg/permissions/up-description", { permissionId: selectedPermission().id, description: newDescription() }, async res => {
+            if (res.hasError()) {
+                notificationService.show({
+                    status: "danger",
+                    title: "Error",
+                    description: res.message
+                });
+            } else {
+                notificationService.show({
+                    status: "success",
+                    title: "Success",
+                    description: "Description updated"
+                });
+                setSelectedPermission({ ...selectedPermission(), description: newDescription() });
+                setNewDescription(null);
+                updatePermissionList();
+                closeDescriptionEditor();
             }
         });
     }
@@ -201,11 +271,6 @@ function ViewPermissions(props) {
             return;
         }
 
-        setPermissionsLoading(true);
-        setTimeout(() => {
-            setPermissionsLoading(false);
-        }, 150);
-
         page++;
         if (search()) {
             doSearch();
@@ -215,30 +280,43 @@ function ViewPermissions(props) {
     }
 
     const minWidthForVerticalScroll = 1200;
+    let lastScrollTop: number = 0;
+    let lastScrollTopLeft: number = 0;
 
     function handleScroll() {
         const scrollContainer = document.getElementById("vu-data");
         if (scrollContainer) {
-            const { scrollTop, clientHeight, scrollWidth, scrollHeight, clientWidth } = scrollContainer;
+            const { scrollTop, scrollLeft, clientHeight, scrollWidth, scrollHeight, clientWidth } = scrollContainer;
 
             // Check the screen width using media query
             const isVerticalScroll = window.matchMedia(`(min-width: ${minWidthForVerticalScroll}px)`).matches;
 
-            if (isVerticalScroll) {
-            // Check vertical scrolling
-                if (scrollTop + clientHeight >= scrollHeight - 50) {
+            if (isVerticalScroll) { // vertical scrolling
+                if (scrollTop < lastScrollTop) { // prevent scrolling up
+                    return;
+                }
+
+                lastScrollTop = scrollTop;
+
                 // Load more items when the user is near the bottom
+                if (scrollTop + clientHeight >= scrollHeight - 50) {
                     loadMorePermissions();
                 }
-            } else {
-            // Check horizontal scrolling
-                if (clientWidth + scrollContainer.scrollLeft >= scrollWidth - 50) {
+            } else { // horizontal scrolling
+                if (scrollLeft < lastScrollTopLeft) { // prevent scrolling left
+                    return;
+                }
+
+                lastScrollTopLeft = scrollLeft;
+
                 // Load more items when the user is near the right edge
+                if (clientWidth + scrollLeft >= scrollWidth - 50) {
                     loadMorePermissions();
                 }
             }
         }
     }
+
 
     function mountScroll() {
         const scrollContainer = document.getElementById("vu-data");
@@ -268,7 +346,7 @@ function ViewPermissions(props) {
         }
     }
 
-    function selectPermission(perm: CleanPermission) {
+    function selectPermission(perm: PermissionVariantDef) {
         setShowRoles(false);
         setShowInfo(true);
         setSelectedPermissionRoles(null);
@@ -279,47 +357,63 @@ function ViewPermissions(props) {
         <ShowIfPermission hasPermission={hasPagePermission}>
 
             <div class="ui-scroller-menu">
-                <div class="ui-scroller">
+                <div class="ui-scroller" id="u-scroll">
                     <div class="data-pin">
                         <label for="mg-search-usr">Search</label>
-                        <input id="mg-search-usr" placeholder="..." onInput={e => searchPermissions(e.target.value)}/>
+                        <input id="mg-search-usr" placeholder="..." onInput={e => searchRoles(e.target.value)}/>
                     </div>
                     <hr/>
                     <div id="vu-data" class="data-scroll">
                         <For each={permissions()}>
                             {permission => (
-                                <div class="ui-bg-gray5">
-                                    <button onClick={() => selectPermission(permission)}>
-                                        {permission.name}
-                                    </button>
-                                </div>
+                                <VStack
+                                    class="ui-bg-gray5 dbg2"
+                                    role="button"
+                                    onClick={() => selectPermission(permission)}
+                                    justifyContent="start"
+                                    height="fit-content"
+                                    padding="$2"
+                                >
+                                    <span>{permission.name}</span>
+                                </VStack>
                             )}
                         </For>
                     </div>
                 </div>
                 <div class="ui-scroller-content center">
-                    <Show when={selectedPermission()}>
+                    <Show when={showLoading()}>
+                        <Spinner />
+                    </Show>
+                    <Show when={!showLoading() && selectedPermission()}>
                         <div class="ui-modal w-40">
-                            <h1>{selectedPermission().name}</h1>
+                            <VStack width="100%" alignItems="start">
+                                <h1>{selectedPermission().name}</h1>
+                                <VStack mt="$1" alignItems="start">
+                                    <HStack>
+                                        <Tag title="Created at" cursor="default"><div class="ui-icon me-1"><BiSolidPlusCircle size={14}/></div> {format(selectedPermission().createdAt, "yyyy-MM-dd")}</Tag>
+                                        <Tag title="Modified at" cursor="default"><div class="ui-icon me-1"><BiSolidPencil size={14}/></div> {format(selectedPermission().updatedAt, "yyyy-MM-dd")}</Tag>
+                                    </HStack>
+                                </VStack>
+                            </VStack>
                             <div class="actions">
                                 <div class="action border">
                                     <button classList={{"active": showInfo()}} onClick={toggleInfo} disabled={showInfo()}>Info</button>
                                     <button classList={{"active": showRoles()}} onClick={toggleInfo} disabled={showRoles()}>Roles</button>
                                 </div>
                                 <Show when={showInfo()}>
-                                    <label for="mg-perm-name">Name</label>
+                                    <label for="mg-permission-name">Name</label>
                                     <div class="action border">
-                                        <input id="mg-perm-name" placeholder={selectedPermission().name} disabled/>
+                                        <input id="mg-permission-name" value={selectedPermission().name} disabled/>
                                         <button
                                             type="button"
                                             class="bg-info ui-icon w-20"
                                             onClick={() => setEditingName(true)}
-                                            title={!hasPermission("Admin.Edit.Permission.Name") ? "You don't have the permission to do that!" : ""}
-                                            disabled={!hasPermission("Admin.Edit.Permission.Name")}
+                                            title={!hasPermission({name: "Admin.Edit.Permission.Name"}) ? "You don't have the permission to do that!" : ""}
+                                            disabled={!hasPermission({name: "Admin.Edit.Permission.Name"})}
                                         >
                                             <div><BiSolidPencil size={15} color="#ffffff"/></div>
                                         </button>
-                                        <Modal opened={editingName()} onClose={closeNameEditor} initialFocus="#mg-perm-new-name">
+                                        <Modal opened={editingName()} onClose={closeNameEditor} initialFocus="#mg-permission-new-name">
                                             <ModalOverlay />
                                             <ModalContent>
                                                 <ModalCloseButton />
@@ -327,12 +421,56 @@ function ViewPermissions(props) {
                                                 <ModalBody>
                                                     <FormControl mb="$4">
                                                         <FormLabel>Name</FormLabel>
-                                                        <Input id="mg-perm-new-name" type="text" placeholder="Enter new name" autocomplete="off" spellcheck={false} onChange={e => setNewName(e.target.value)}/>
+                                                        <Input id="mg-permission-new-name" type="text" placeholder="Enter new name" autocomplete="off" spellcheck={false} onChange={e => setNewName(e.target.value)}/>
                                                     </FormControl>
                                                 </ModalBody>
                                                 <ModalFooter>
                                                     <Button onClick={updateName}>Update</Button>
-                                                    <Button id="mg-perm-new-name-cancel" onClick={closeNameEditor} ms="auto" colorScheme={"primary"}>Cancel</Button>
+                                                    <Button id="mg-permission-new-name-cancel" onClick={closeNameEditor} ms="auto" colorScheme={"primary"}>Cancel</Button>
+                                                </ModalFooter>
+                                            </ModalContent>
+                                        </Modal>
+                                    </div>
+
+                                    <label for="mg-permission-description">Description</label>
+                                    <div class="action border" style={{height: "unset"}}>
+                                        <Textarea
+                                            id="mg-permission-description"
+                                            value={selectedPermission().description}
+                                            size="lg"
+                                            fontSize={14}
+                                            onChange={e => setNewDescription(e.target.value)}
+                                            disabled
+                                        />
+                                        <button
+                                            type="button"
+                                            class="bg-info ui-icon w-20"
+                                            style={{height: "unset"}}
+                                            onClick={() => setEditingDescription(true)}
+                                            title={!hasPermission({name: "Admin.Edit.Permission.Description"}) ? "You don't have the permission to do that!" : ""}
+                                            disabled={!hasPermission({name: "Admin.Edit.Permission.Description"})}
+                                        >
+                                            <div><BiSolidPencil size={15} color="#ffffff"/></div>
+                                        </button>
+                                        <Modal opened={editingDescription()} onClose={closeDescriptionEditor} initialFocus="#mg-permission-new-description">
+                                            <ModalOverlay />
+                                            <ModalContent>
+                                                <ModalCloseButton />
+                                                <ModalHeader>Edit Description</ModalHeader>
+                                                <ModalBody>
+                                                    <FormControl mb="$4">
+                                                        <FormLabel>Description</FormLabel>
+                                                        <Textarea
+                                                            id="mg-permission-new-description"
+                                                            placeholder="Enter new description"
+                                                            size="lg"
+                                                            onChange={e => setNewDescription(e.target.value)}
+                                                        />
+                                                    </FormControl>
+                                                </ModalBody>
+                                                <ModalFooter>
+                                                    <Button onClick={updateDescription}>Update</Button>
+                                                    <Button id="mg-permission-new-description-cancel" onClick={closeDescriptionEditor} ms="auto" colorScheme={"primary"}>Cancel</Button>
                                                 </ModalFooter>
                                             </ModalContent>
                                         </Modal>
@@ -340,8 +478,8 @@ function ViewPermissions(props) {
                                     <div class="action bg-danger">
                                         <button
                                             type="button"
-                                            title={!hasPermission("Admin.Edit.Permission.Delete") ? "You don't have the permission to do that!" : ""}
-                                            disabled={!hasPermission("Admin.Edit.Permission.Delete")}
+                                            title={!hasPermission({name: "Admin.Edit.Permission.Delete"}) ? "You don't have the permission to do that!" : ""}
+                                            disabled={!hasPermission({name: "Admin.Edit.Permission.Delete"})}
                                             onClick={() => setDeletePermissionCR(true)}
                                         >
                                             Delete
@@ -353,16 +491,16 @@ function ViewPermissions(props) {
                                 </Show>
 
                                 <Show when={showRoles()}>
-                                    <div class="ui-scroller w-100 mt-2" style={{"max-height": "250px"}}>
-                                        <For each={selectedPermissionRoles()}>
-                                            {role => (
-                                                <div class="ui-bg-gray4 action">
-                                                    <div>
-                                                        {role.name}
+                                    <div class="ui-scroller-h w-100 mt-2" style={{"max-height": "250px"}}>
+                                        <div class="data-scroll">
+                                            <For each={selectedPermissionRoles()}>
+                                                {role => (
+                                                    <div class="action border">
+                                                        <input value={role.name} disabled style={{border: "none"}}/>
                                                     </div>
-                                                </div>
-                                            )}
-                                        </For>
+                                                )}
+                                            </For>
+                                        </div>
                                     </div>
                                 </Show>
                             </div>
@@ -370,7 +508,7 @@ function ViewPermissions(props) {
                     </Show>
                     <Show when={!selectedPermission()}>
                         <div class="ui-modal w-40">
-                            <h1>No user selected</h1>
+                            <h1>No role selected</h1>
                         </div>
                     </Show>
                 </div>
