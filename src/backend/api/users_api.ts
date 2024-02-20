@@ -1,6 +1,6 @@
 import Hashing from "@shared/Hashing";
 import logger from "@shared/Logger";
-import { baseCheck } from "@shared/Validation";
+import { baseCheck, getFirstCheckError } from "@shared/Validation";
 import { UserVariantAuth } from "@typings";
 import { AppDataSource } from "backend/database/data-source";
 import { Role, User } from "backend/database/entity";
@@ -15,7 +15,7 @@ import dotenv from "dotenv";
 import { Router } from "express";
 import { ILike } from "typeorm";
 
-import { ensureAuthenticated, parseNumber, requirePermissions, targetUserNotAdmin, targetUserValid, validateMfaToken } from "./tools";
+import { ensureAuthenticated, ensureDevEnv, parseNumber, requirePermissions, targetUserNotAdmin, targetUserValid, validateMfaToken } from "./tools";
 
 dotenv.config();
 
@@ -27,6 +27,12 @@ UsersRouter.post("/mg/users/create/info", ensureAuthenticated, requirePermission
     res.json({
         status: "success"
     });
+});
+
+UsersRouter.post("/mg/users/test-create", ensureDevEnv, async (req: CRequest, res) => {
+    console.log(baseCheck("a@a.com", EMAIL_RULES));
+    console.log(getFirstCheckError("a@a.com", EMAIL_RULES));
+    res.status(200).json({});
 });
 
 UsersRouter.post("/mg/users/create", ensureAuthenticated, requirePermissions(
@@ -53,6 +59,8 @@ UsersRouter.post("/mg/users/create", ensureAuthenticated, requirePermissions(
     }
 
     if (!baseCheck(email, EMAIL_RULES)) {
+        console.log("Invalid Email");
+        console.log(email);
         res.status(400).json({
             status: "error",
             message: "Invalid Email"

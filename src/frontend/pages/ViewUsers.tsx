@@ -12,6 +12,7 @@ import { createSignal, For, onCleanup, Show } from "solid-js";
 
 import Store from "../Store";
 import { api, Validator } from "../utils";
+import { apiv2 } from "../utils/apiv2";
 
 function ViewUsers(props) {
     type _Role = {id: string, name: string, has: boolean};
@@ -49,6 +50,11 @@ function ViewUsers(props) {
 
     const [hasPagePermission, setHasPagePermission] = createSignal<boolean | null>(null);
 
+
+    const createUserApi = apiv2.createAPIMethod<
+        { username: string, email: string, password: string },
+        { user: UserVariantDef }
+        >({ method: "POST", url: "/api/mg/users/create"});
 
     const navigate = useNavigate();
     let page = 0;
@@ -387,11 +393,33 @@ function ViewUsers(props) {
     }
 
     function createUser() {
-        // TODO: add api post
-        setNewUsername(null);
-        setNewEmail(null);
-        setNewPassword(null);
-        setIsCreateUser(true);
+        createUserApi.call({
+            username: newUsername(),
+            email: newEmail(),
+            password: newPassword()
+        }, async res => {
+            if (res.hasError()) {
+                notificationService.show({
+                    status: "danger",
+                    title: "Error",
+                    description: res.message
+                });
+                return;
+            }
+            const user = res.data.user;
+            setUsers([user, ...users()]);
+            setSelectedUser(user);
+            notificationService.show({
+                status: "success",
+                title: "Success",
+                description: "User created"
+            });
+
+            setNewUsername(null);
+            setNewEmail(null);
+            setNewPassword(null);
+            setIsCreateUser(true);
+        });
     }
 
     function closeCreateUser() {
@@ -556,7 +584,7 @@ function ViewUsers(props) {
                         <input id="mg-search-usr" placeholder="..." onInput={e => searchUsers(e.target.value)}/>
                         <button
                             class="bg-info mt-1"
-                            onClick={createUser}
+                            onClick={() => setIsCreateUser(true)}
                             title={!hasPermission({name: "Admin.Create.User"}) ? "You don't have the permission to do that!" : ""}
                             disabled={!hasPermission({name: "Admin.Create.User"})}
                         >

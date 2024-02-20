@@ -12,6 +12,7 @@ import { createSignal, For, onCleanup, Show } from "solid-js";
 
 import Store from "../Store";
 import { api, Validator } from "../utils";
+import { apiv2 } from "../utils/apiv2";
 
 function ViewRoles(props) {
     type _Permission = {id: string, name: string, hasPermission: boolean | null};
@@ -47,6 +48,13 @@ function ViewRoles(props) {
 
     const [hasPagePermission, setHasPagePermission] = createSignal<boolean | null>(null);
 
+    const createRoleApi = apiv2.createAPIMethod<
+        {
+            name: string,
+            description: string
+        },
+        { role: RoleVariantDef }
+        >({ method: "POST", url: "/api/mg/roles/create" });
 
     let page = 0;
     const count = 25;
@@ -372,10 +380,30 @@ function ViewRoles(props) {
     }
 
     function createRole() {
-        // TODO: add api post
-        setNewName(null);
-        setNewDescription(null);
-        setIsCreateRole(true);
+        createRoleApi.call({
+            name: newName(),
+            description: newDescription()
+        }, async res => {
+            if (res.hasError()) {
+                notificationService.show({
+                    status: "danger",
+                    title: "Error",
+                    description: res.message
+                });
+            }
+            const newRole = res.data.role;
+            setRoles([newRole, ...roles()]);
+            setSelectedRole(newRole);
+            notificationService.show({
+                status: "success",
+                title: "Success",
+                description: "Role created"
+            });
+
+            setNewName(null);
+            setNewDescription(null);
+            setIsCreateRole(true);
+        });
     }
 
     function closeCreateRole() {
@@ -552,7 +580,7 @@ function ViewRoles(props) {
                         <input id="mg-search-usr" placeholder="..." onInput={e => searchRoles(e.target.value)}/>
                         <button
                             class="bg-info mt-1"
-                            onClick={createRole}
+                            onClick={() => setIsCreateRole(true)}
                             title={!hasPermission({name: "Admin.Create.Role"}) ? "You don't have the permission to do that!" : ""}
                             disabled={!hasPermission({name: "Admin.Create.Role"})}
                         >

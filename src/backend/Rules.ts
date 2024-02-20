@@ -38,6 +38,9 @@ export const EMAIL_RULES: BaseRules = {
     allowEmpty: false,
     allowWhitespace: false,
     allowNewlines: false,
+    allowSpecialChars: true,
+    allowNonLatinChars: false,
+    allowEmoji: false,
     maxLength: 255,
     regex: /^([a-z0-9_.-]+)@([\da-z.-]+)\.([a-z.]{2,6})$/
 };

@@ -67,7 +67,6 @@ RolesRouter.post("/mg/roles/create", ensureAuthenticated, requirePermissions(
     const topPower = await userTopPower((<User>req.user).id);
 
     const requiresMfa = req.body.requiresMfa || false;
-    const disabled = req.body.disabled || false;
     const isDefault = req.body.isDefault || false;
     const power = req.body.power || 0;
     if (power >= topPower) {
@@ -82,7 +81,7 @@ RolesRouter.post("/mg/roles/create", ensureAuthenticated, requirePermissions(
     role.name = rName;
     role.description = rDescription;
     role.requiresMfa = requiresMfa;
-    role.disabled = disabled;
+    role.disabled = true;
     role.isDefault = isDefault;
     role.power = power;
 
