@@ -415,17 +415,16 @@ ApiRouter.post("/common/rules", ensureAuthenticated, async function(req: CReques
     const result: Record<string, BaseRules> = {};
 
     for (const rule of rules) {
-        if (!AVAILABLE_RULES[rule]) {
+        if (!AVAILABLE_RULES[rule] || !(await hasPermissions(user.id, PermNameComp, AVAILABLE_RULES[rule].permission))) {
             result[rule] = null;
         }
-        if (AVAILABLE_RULES[rule].permission && !(await hasPermissions(user.id, PermNameComp, AVAILABLE_RULES[rule].permission))) {
-            result[rule] = null;
+        else {
+            result[rule] = {
+                ...DEFAULT_RULES,
+                ...AVAILABLE_RULES[rule].rule,
+                regex: AVAILABLE_RULES[rule].rule.regex?.source
+            };
         }
-        result[rule] = {
-            ...DEFAULT_RULES,
-            ...AVAILABLE_RULES[rule].rule,
-            regex: AVAILABLE_RULES[rule].rule.regex?.source
-        };
     }
 
     res.json({ status: "success", data: {

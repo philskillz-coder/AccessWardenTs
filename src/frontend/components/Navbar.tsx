@@ -38,7 +38,7 @@ export const Navbar = props => {
                         <li class="nav-item"><A class="nav-link" href="/v-perms">Permissions</A></li>
                         <li class="nav-item"><A class="nav-link" href="/dashboard">Dashboard</A></li>
                         <li class="nav-item"><A class="nav-link" href="/account">Account</A></li>
-                        <li class="nav-item"><A class="nav-link" role="button" href="#" onClick={logout}>Logout</A></li>
+                        <li class="nav-item"><a class="nav-link inactive" role="button" href="#" onClick={logout}>Logout</a></li>
                     </Show>
                     <Show when={!store().user()}>
                         <li class="nav-item"><A class="nav-link" href="/login">Login</A></li>

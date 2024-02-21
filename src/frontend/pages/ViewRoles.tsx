@@ -616,6 +616,7 @@ function ViewRoles(props) {
                                             placeholder="Enter description"
                                             autocomplete="off"
                                             spellcheck={false}
+                                            size="lg"
                                             onInput={e => setNewDescription(e.target.value)}
                                             invalid={newDescriptionError() !== null}
                                         />

@@ -1,6 +1,6 @@
 import { ModalConfirmation } from "@components/ModalConfirmation";
 import { ShowIfPermission } from "@components/ShowIfPermission";
-import { Button, FormControl, FormLabel, HStack, Modal, ModalBody, ModalFooter, ModalHeader, Spinner, Tag, Textarea, VStack } from "@hope-ui/solid";
+import { Button, FormControl, FormHelperText, FormLabel, HStack, Modal, ModalBody, ModalFooter, ModalHeader, Spinner, Tag, Textarea, VStack } from "@hope-ui/solid";
 import { Input, ModalCloseButton, ModalContent, ModalOverlay, notificationService } from "@hope-ui/solid";
 import { ApiResponseFlags, PermissionVariantDef } from "@typings";
 import { format } from "date-fns";
@@ -8,7 +8,8 @@ import { BiSolidPencil, BiSolidPlusCircle } from "solid-icons/bi";
 import { createSignal, For, onCleanup, Show } from "solid-js";
 
 import Store from "../Store";
-import { api } from "../utils";
+import { api, Validator } from "../utils";
+import { apiv2 } from "../utils/apiv2";
 
 function ViewPermissions(props) {
     type _Role = {id: string, name: string};
@@ -24,11 +25,18 @@ function ViewPermissions(props) {
     const [selectedPermission, setSelectedPermission] = createSignal<PermissionVariantDef | null>(null);
     const [selectedPermissionRoles, setSelectedPermissionRoles] = createSignal<_Role[] | null>(null);
 
-    const [editingName, setEditingName] = createSignal(false);
-    const [newName, setNewName] = createSignal<string | null>(null);
-    const [editingDescription, setEditingDescription] = createSignal(false);
-    const [newDescription, setNewDescription] = createSignal<string | null>(null);
+    const validator = new Validator("permission_name", "permission_description");
 
+    const [editingName, setEditingName] = createSignal(false);
+    const [newName, setNewName, newNameError] = validator.useValidator("permission_name", "");
+    const [editingDescription, setEditingDescription] = createSignal(false);
+    const [newDescription, setNewDescription, newDescriptionError] = validator.useValidator("permission_description", "");
+
+    const createPermissionApi = apiv2.createAPIMethod<
+        { name: string, description: string },
+        { permission: PermissionVariantDef }
+    >({ method: "POST", url: "/api/mg/permissions/create" });
+    const [isCreatePermission, setIsCreatePermission] = createSignal(false);
     const [deletePermissionCR, setDeletePermissionCR] = createSignal(false);
 
     const [hasPagePermission, setHasPagePermission] = createSignal<boolean | null>(null);
@@ -279,6 +287,41 @@ function ViewPermissions(props) {
         }
     }
 
+    function createPermission() {
+        createPermissionApi.call({
+            name: newName(),
+            description: newDescription()
+        }, async res => {
+            if (res.hasError()) {
+                notificationService.show({
+                    status: "danger",
+                    title: "Error",
+                    description: res.message
+                });
+                return;
+            }
+
+            const newPerm = res.data.permission;
+            setPermissions([newPerm, ...permissions()]);
+            setSelectedPermission(newPerm);
+            notificationService.show({
+                status: "success",
+                title: "Success",
+                description: "Permission created"
+            });
+
+            setNewName(null);
+            setNewDescription(null);
+            setIsCreatePermission(false);
+        });
+    }
+
+    function closeCreatePermission() {
+        setIsCreatePermission(false);
+        setNewName(null);
+        setNewDescription(null);
+    }
+
     const minWidthForVerticalScroll = 1200;
     let lastScrollTop: number = 0;
     let lastScrollTopLeft: number = 0;
@@ -361,6 +404,57 @@ function ViewPermissions(props) {
                     <div class="data-pin">
                         <label for="mg-search-usr">Search</label>
                         <input id="mg-search-usr" placeholder="..." onInput={e => searchRoles(e.target.value)}/>
+                        <button
+                            class="bg-info mt-1"
+                            onClick={() => setIsCreatePermission(true)}
+                            title={!hasPermission({name: "Admin.Create.Permission"}) ? "You don't have the permission to do that!" : ""}
+                            disabled={!hasPermission({name: "Admin.Create.Permission"})}
+                        >
+                            Create permission
+                        </button>
+                        <Modal opened={isCreatePermission()} onClose={closeCreatePermission} initialFocus="#mg-permission-new-permission-name">
+                            <ModalOverlay />
+                            <ModalContent>
+                                <ModalCloseButton />
+                                <ModalHeader>Create Permission</ModalHeader>
+                                <ModalBody>
+                                    <FormControl mb="$4">
+                                        <FormLabel>Name</FormLabel>
+                                        <Input
+                                            id="mg-permission-new-permission-name"
+                                            type="text"
+                                            placeholder="Enter name"
+                                            autocomplete="off"
+                                            spellcheck={false}
+                                            onInput={e => setNewName(e.target.value)}
+                                            invalid={newNameError() !== null}
+                                        />
+                                        <Show when={newNameError() !== null}>
+                                            <FormHelperText color="red">{newNameError()}</FormHelperText>
+                                        </Show>
+                                    </FormControl>
+                                    <FormControl mb="$4">
+                                        <FormLabel>Description</FormLabel>
+                                        <Textarea
+                                            id="mg-permission-new-permission-description"
+                                            placeholder="Enter description"
+                                            autocomplete="off"
+                                            size="lg"
+                                            spellcheck={false}
+                                            onInput={e => setNewDescription(e.target.value)}
+                                            invalid={newDescriptionError() !== null}
+                                        />
+                                        <Show when={newDescriptionError() !== null}>
+                                            <FormHelperText color="red">{newDescriptionError()}</FormHelperText>
+                                        </Show>
+                                    </FormControl>
+                                </ModalBody>
+                                <ModalFooter>
+                                    <Button onClick={createPermission} disabled={newNameError() !== null || newDescriptionError() !== null}>Create</Button>
+                                    <Button id="mg-permission-new-permission-cancel" onClick={closeCreatePermission} ms="auto" colorScheme={"primary"}>Cancel</Button>
+                                </ModalFooter>
+                            </ModalContent>
+                        </Modal>
                     </div>
                     <hr/>
                     <div id="vu-data" class="data-scroll">
