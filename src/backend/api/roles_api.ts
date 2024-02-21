@@ -64,26 +64,10 @@ RolesRouter.post("/mg/roles/create", ensureAuthenticated, requirePermissions(
         return;
     }
 
-    const topPower = await userTopPower((<User>req.user).id);
-
-    const requiresMfa = req.body.requiresMfa || false;
-    const isDefault = req.body.isDefault || false;
-    const power = req.body.power || 0;
-    if (power >= topPower) {
-        res.status(400).json({
-            status: "error",
-            message: "Power is too high"
-        });
-        return;
-    }
-
     const role = new Role();
     role.name = rName;
     role.description = rDescription;
-    role.requiresMfa = requiresMfa;
     role.disabled = true;
-    role.isDefault = isDefault;
-    role.power = power;
 
     await AppDataSource.getRepository(Role).save(role);
 

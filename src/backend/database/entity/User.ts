@@ -7,7 +7,7 @@ export class User {
     @PrimaryGeneratedColumn()
         id: number;
 
-    @Column()
+    @Column({ default: false })
         isAdmin: boolean;
 
     @Column({ unique: true })
@@ -28,7 +28,7 @@ export class User {
     @Column()
         passwordSalt: string;
 
-    @Column()
+    @Column({ default: false })
         mfaEnabled: boolean;
 
     @Column({nullable: true})

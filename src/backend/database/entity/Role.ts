@@ -12,16 +12,16 @@ export class Role {
     @Column({ unique: true })
         name: string;
 
-    @Column({ nullable: true })
+    @Column({ default: ""})
         description: string;
 
-    @Column()
+    @Column({ default: false })
         requiresMfa: boolean;
 
     @Column({ default: false})
         disabled: boolean;
 
-    @Column()
+    @Column({ default: false })
         isDefault: boolean;
 
     @Column({ default: 1 })

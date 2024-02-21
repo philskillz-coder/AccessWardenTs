@@ -390,7 +390,9 @@ function ViewRoles(props) {
                     title: "Error",
                     description: res.message
                 });
+                return;
             }
+
             const newRole = res.data.role;
             setRoles([newRole, ...roles()]);
             setSelectedRole(newRole);
@@ -402,7 +404,7 @@ function ViewRoles(props) {
 
             setNewName(null);
             setNewDescription(null);
-            setIsCreateRole(true);
+            setIsCreateRole(false);
         });
     }
 
@@ -737,7 +739,7 @@ function ViewRoles(props) {
                                             size="lg"
                                             fontSize={14}
                                             onChange={e => setNewDescription(e.target.value)}
-                                            readonly
+                                            disabled={true}
                                         />
                                         <button
                                             type="button"

@@ -120,7 +120,7 @@ button, input, a, select, textarea {
     &:disabled {
         cursor: default;
         color: var(--gray2);
-        opacity: unset;
+        opacity: unset !important;
         &:hover {
             cursor: default;
         }

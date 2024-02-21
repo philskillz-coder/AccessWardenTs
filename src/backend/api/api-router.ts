@@ -409,7 +409,7 @@ const AVAILABLE_RULES = {
     }
 };
 
-ApiRouter.post("/common/rules", async function(req: CRequest, res) {
+ApiRouter.post("/common/rules", ensureAuthenticated, async function(req: CRequest, res) {
     const user = <User>req.user;
     const rules: string[] = req.body.rules;
     const result: Record<string, BaseRules> = {};

@@ -17,7 +17,6 @@ dotenv.config();
 
 const PermissionsRouter = Router();
 
-// TODO: new role, permssion, user endpoints + frontend
 // TODO: check if all endpoints work
 // TODO: not a robot check when register, login
 

@@ -30,8 +30,8 @@ UsersRouter.post("/mg/users/create/info", ensureAuthenticated, requirePermission
 });
 
 UsersRouter.post("/mg/users/test-create", ensureDevEnv, async (req: CRequest, res) => {
-    console.log(baseCheck("a@a.com", EMAIL_RULES));
-    console.log(getFirstCheckError("a@a.com", EMAIL_RULES));
+    console.log(baseCheck("aaaaAAAA$4", PASSWORD_RULES));
+    console.log(getFirstCheckError("aaaaAAAA$4", PASSWORD_RULES));
     res.status(200).json({});
 });
 
@@ -99,9 +99,11 @@ UsersRouter.post("/mg/users/create", ensureAuthenticated, requirePermissions(
     const user = new User();
     user.username = username;
     user.email = email;
+    user.isEmailVerified = false;
     user.passwordHash = passwordHash;
     user.passwordSalt = salt;
     user.loginSession = Hashing.generateSalt();
+    user.suspended = true;
 
     await AppDataSource.getRepository(User).save(user);
     res.json({

@@ -418,7 +418,7 @@ function ViewUsers(props) {
             setNewUsername(null);
             setNewEmail(null);
             setNewPassword(null);
-            setIsCreateUser(true);
+            setIsCreateUser(false);
         });
     }
 
